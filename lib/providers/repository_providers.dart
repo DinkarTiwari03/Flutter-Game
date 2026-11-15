@@ -22,6 +22,7 @@ import 'package:city_builder_2040/services/autosave_service.dart';
 import 'package:city_builder_2040/services/building_service.dart';
 import 'package:city_builder_2040/services/city_service.dart';
 import 'package:city_builder_2040/services/economy_service.dart';
+import 'package:city_builder_2040/services/exhibition_service.dart';
 import 'package:city_builder_2040/services/simulation_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -110,6 +111,16 @@ final simulationServiceProvider = Provider<SimulationService>((ref) {
 
 final autosaveServiceProvider = Provider<AutosaveService>((ref) {
   return AutosaveService(
+    cities: ref.watch(cityRepositoryProvider),
+    buildings: ref.watch(buildingRepositoryProvider),
+    resources: ref.watch(resourceRepositoryProvider),
+    missions: ref.watch(missionRepositoryProvider),
+    playerProgress: ref.watch(playerProgressRepositoryProvider),
+  );
+});
+
+final exhibitionServiceProvider = Provider<ExhibitionService>((ref) {
+  return ExhibitionService(
     cities: ref.watch(cityRepositoryProvider),
     buildings: ref.watch(buildingRepositoryProvider),
     resources: ref.watch(resourceRepositoryProvider),

@@ -6,6 +6,7 @@ import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/responsive.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
+import 'package:city_builder_2040/providers/repository_providers.dart';
 import 'package:city_builder_2040/widgets/about_game_dialog.dart';
 import 'package:city_builder_2040/widgets/city_backdrop.dart';
 import 'package:city_builder_2040/widgets/city_logo.dart';
@@ -75,6 +76,13 @@ class MainMenuScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         GameButton(
+                          label: 'Exhibition Demo',
+                          icon: Icons.auto_awesome_rounded,
+                          variant: GameButtonVariant.secondary,
+                          onPressed: () => _showExhibitionDialog(context, ref),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        GameButton(
                           label: 'Settings',
                           icon: Icons.tune_rounded,
                           variant: GameButtonVariant.secondary,
@@ -103,6 +111,59 @@ class MainMenuScreen extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showExhibitionDialog(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: AppColors.teal),
+            SizedBox(width: AppSpacing.xs),
+            Text('Exhibition Demo'),
+          ],
+        ),
+        content: const Text(
+          'Launch a preconfigured showcase city with all building tiers unlocked (Mayor Level 5), '
+          'a 25,000 coin treasury, and an active district layout. Ideal for exhibition booth presentations!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final exhibition = ref.read(exhibitionServiceProvider);
+              final demoCity = await exhibition.resetDemoCity();
+              ref.read(activeCityProvider.notifier).open(demoCity);
+              if (context.mounted) {
+                Navigator.of(context).pushNamed(AppRoutes.game);
+              }
+            },
+            child: const Text('Reset & Launch'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.teal,
+              foregroundColor: AppColors.navy,
+            ),
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final exhibition = ref.read(exhibitionServiceProvider);
+              final demoCity = await exhibition.getOrCreateDemoCity();
+              ref.read(activeCityProvider.notifier).open(demoCity);
+              if (context.mounted) {
+                Navigator.of(context).pushNamed(AppRoutes.game);
+              }
+            },
+            child: const Text('Launch Demo'),
+          ),
+        ],
       ),
     );
   }

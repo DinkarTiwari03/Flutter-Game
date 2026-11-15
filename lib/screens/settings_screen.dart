@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
+import 'package:city_builder_2040/providers/active_city_provider.dart';
+import 'package:city_builder_2040/providers/repository_providers.dart';
 import 'package:city_builder_2040/providers/settings_provider.dart';
+import 'package:city_builder_2040/services/exhibition_service.dart';
 import 'package:city_builder_2040/widgets/game_card.dart';
 import 'package:city_builder_2040/widgets/game_scaffold.dart';
 
@@ -15,12 +18,71 @@ class SettingsScreen extends ConsumerWidget {
     final notifier = ref.read(settingsProvider.notifier);
     final textTheme = Theme.of(context).textTheme;
 
+    final activeCity = ref.watch(activeCityProvider);
+
     return GameScaffold(
       title: 'Settings',
       subtitle: 'Tune your experience',
       child: SingleChildScrollView(
         child: Column(
           children: [
+            // --- Exhibition Demo Controls (active only when demo city is open) ---
+            if (activeCity?.id == ExhibitionService.demoCityId) ...[
+              GameCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.teal,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Exhibition Demo Controls',
+                          style: textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Reset this demonstration city back to its initial layout, Level 5 unlocks, and 25,000 coin treasury.',
+                      style: textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.teal,
+                        foregroundColor: AppColors.navy,
+                      ),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Reset Demo City'),
+                      onPressed: () async {
+                        final exhibition = ref.read(exhibitionServiceProvider);
+                        final resetCity = await exhibition.resetDemoCity();
+                        ref.read(activeCityProvider.notifier).open(resetCity);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Exhibition demo city reset to default showcase layout!',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+
             // --- Sound & Music ---
             GameCard(
               padding: const EdgeInsets.symmetric(
