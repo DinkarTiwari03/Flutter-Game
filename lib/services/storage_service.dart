@@ -2,7 +2,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:city_builder_2040/core/constants/app_constants.dart';
 import 'package:city_builder_2040/core/utils/app_exception.dart';
 
-/// Thin wrapper around Hive. Game saves will build on this in a later phase.
+/// Thin wrapper around Hive for small key-value app preferences.
+///
+/// Game data (cities, buildings, resources, missions, progress) does not go
+/// through this class. It is accessed via the repository interfaces in
+/// `lib/repositories`.
 class StorageService {
   Box<dynamic>? _settings;
 

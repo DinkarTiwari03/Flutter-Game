@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.citybuilder.city_builder_2040"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Highest NDK required by plugins (path_provider_android); NDKs are backward compatible.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
