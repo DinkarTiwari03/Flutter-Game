@@ -22,6 +22,60 @@ enum BuildingCategory {
   final Color color;
 }
 
+/// Data-driven configuration for a building's resource generation and consumption.
+class BuildingResourceConfig {
+  const BuildingResourceConfig({
+    this.housingCapacity = 0,
+    this.residentialTaxPerResident = 0.0,
+    this.commercialIncome = 0,
+    this.industrialIncome = 0,
+    this.maintenanceCost = 0,
+    this.electricityProduction = 0,
+    this.electricityConsumption = 0,
+    this.waterProduction = 0,
+    this.waterConsumption = 0,
+    this.pollutionOutput = 0,
+    this.pollutionReduction = 0,
+    this.happinessBonus = 0,
+  });
+
+  /// Maximum residents this building can house (residential).
+  final int housingCapacity;
+
+  /// Coins generated per citizen living in this building per tick.
+  final double residentialTaxPerResident;
+
+  /// Direct coins generated per tick (commercial).
+  final int commercialIncome;
+
+  /// Direct coins generated per tick (industrial).
+  final int industrialIncome;
+
+  /// Operating cost in coins deducted per tick.
+  final int maintenanceCost;
+
+  /// Electricity generated in kW per tick (power plants, solar).
+  final int electricityProduction;
+
+  /// Electricity consumed in kW per tick.
+  final int electricityConsumption;
+
+  /// Water generated in kL per tick (water facilities).
+  final int waterProduction;
+
+  /// Water consumed in kL per tick.
+  final int waterConsumption;
+
+  /// Environmental pollution units added per tick (factories, power plants).
+  final int pollutionOutput;
+
+  /// Environmental pollution units scrubbed/mitigated per tick (parks, treatment).
+  final int pollutionReduction;
+
+  /// Direct positive contribution to city happiness rating.
+  final int happinessBonus;
+}
+
 /// Reusable definition of a constructible building type.
 class BuildingDefinition {
   const BuildingDefinition({
@@ -36,6 +90,7 @@ class BuildingDefinition {
     this.maxLevel = 3,
     required this.icon,
     this.color,
+    this.resources = const BuildingResourceConfig(),
   });
 
   final String id;
@@ -60,6 +115,9 @@ class BuildingDefinition {
 
   final IconData icon;
   final Color? color;
+
+  /// Resource production, consumption, and economic behavior.
+  final BuildingResourceConfig resources;
 
   Color get accentColor => color ?? category.color;
 
@@ -97,6 +155,82 @@ class BuildingDefinition {
     }
     return (totalInvested * 0.5).round();
   }
+
+  // Tier-scaled resource calculations:
+
+  /// Effective housing capacity at [level].
+  int effectiveHousingCapacity(int level) {
+    if (resources.housingCapacity <= 0) return 0;
+    return (resources.housingCapacity * (1.0 + (level - 1) * 0.5)).round();
+  }
+
+  /// Effective commercial income at [level].
+  int effectiveCommercialIncome(int level) {
+    if (resources.commercialIncome <= 0) return 0;
+    return (resources.commercialIncome * (1.0 + (level - 1) * 0.4)).round();
+  }
+
+  /// Effective industrial income at [level].
+  int effectiveIndustrialIncome(int level) {
+    if (resources.industrialIncome <= 0) return 0;
+    return (resources.industrialIncome * (1.0 + (level - 1) * 0.5)).round();
+  }
+
+  /// Effective residential tax collected for [residents] housed in this building at [level].
+  int effectiveResidentialTax(int level, int residents) {
+    if (resources.residentialTaxPerResident <= 0 || residents <= 0) return 0;
+    final rateMultiplier = 1.0 + (level - 1) * 0.2;
+    return (residents * resources.residentialTaxPerResident * rateMultiplier)
+        .round();
+  }
+
+  /// Effective operating maintenance cost at [level].
+  int effectiveMaintenance(int level) {
+    if (resources.maintenanceCost <= 0) return 0;
+    return (resources.maintenanceCost * (1.0 + (level - 1) * 0.35)).round();
+  }
+
+  /// Effective electricity generation in kW at [level].
+  int effectiveElectricityProduction(int level) {
+    if (resources.electricityProduction <= 0) return 0;
+    return (resources.electricityProduction * (1.0 + (level - 1) * 0.5)).round();
+  }
+
+  /// Effective electricity consumption in kW at [level].
+  int effectiveElectricityConsumption(int level) {
+    if (resources.electricityConsumption <= 0) return 0;
+    return (resources.electricityConsumption * (1.0 + (level - 1) * 0.3)).round();
+  }
+
+  /// Effective water generation in kL at [level].
+  int effectiveWaterProduction(int level) {
+    if (resources.waterProduction <= 0) return 0;
+    return (resources.waterProduction * (1.0 + (level - 1) * 0.5)).round();
+  }
+
+  /// Effective water consumption in kL at [level].
+  int effectiveWaterConsumption(int level) {
+    if (resources.waterConsumption <= 0) return 0;
+    return (resources.waterConsumption * (1.0 + (level - 1) * 0.3)).round();
+  }
+
+  /// Effective environmental pollution output at [level].
+  int effectivePollutionOutput(int level) {
+    if (resources.pollutionOutput <= 0) return 0;
+    return (resources.pollutionOutput * (1.0 + (level - 1) * 0.25)).round();
+  }
+
+  /// Effective environmental pollution reduction at [level].
+  int effectivePollutionReduction(int level) {
+    if (resources.pollutionReduction <= 0) return 0;
+    return (resources.pollutionReduction * (1.0 + (level - 1) * 0.4)).round();
+  }
+
+  /// Effective happiness bonus contributed at [level].
+  int effectiveHappinessBonus(int level) {
+    if (resources.happinessBonus <= 0) return 0;
+    return (resources.happinessBonus * (1.0 + (level - 1) * 0.3)).round();
+  }
 }
 
 /// Registry of all standard building definitions.
@@ -113,6 +247,13 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 100,
     maxLevel: 3,
     icon: Icons.cottage_rounded,
+    resources: BuildingResourceConfig(
+      housingCapacity: 12,
+      residentialTaxPerResident: 1.5,
+      maintenanceCost: 2,
+      electricityConsumption: 3,
+      waterConsumption: 3,
+    ),
   );
 
   static const apartments = BuildingDefinition(
@@ -126,6 +267,13 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 400,
     maxLevel: 3,
     icon: Icons.apartment_rounded,
+    resources: BuildingResourceConfig(
+      housingCapacity: 60,
+      residentialTaxPerResident: 1.5,
+      maintenanceCost: 8,
+      electricityConsumption: 15,
+      waterConsumption: 15,
+    ),
   );
 
   static const residentialTower = BuildingDefinition(
@@ -139,6 +287,13 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 1200,
     maxLevel: 4,
     icon: Icons.location_city_rounded,
+    resources: BuildingResourceConfig(
+      housingCapacity: 240,
+      residentialTaxPerResident: 1.8,
+      maintenanceCost: 30,
+      electricityConsumption: 45,
+      waterConsumption: 45,
+    ),
   );
 
   // Commercial
@@ -153,6 +308,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 150,
     maxLevel: 3,
     icon: Icons.storefront_rounded,
+    resources: BuildingResourceConfig(
+      commercialIncome: 45,
+      maintenanceCost: 5,
+      electricityConsumption: 5,
+      waterConsumption: 4,
+    ),
   );
 
   static const shoppingMall = BuildingDefinition(
@@ -166,6 +327,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 800,
     maxLevel: 3,
     icon: Icons.local_mall_rounded,
+    resources: BuildingResourceConfig(
+      commercialIncome: 200,
+      maintenanceCost: 25,
+      electricityConsumption: 30,
+      waterConsumption: 25,
+    ),
   );
 
   static const officeBuilding = BuildingDefinition(
@@ -179,6 +346,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 1500,
     maxLevel: 4,
     icon: Icons.domain_rounded,
+    resources: BuildingResourceConfig(
+      commercialIncome: 420,
+      maintenanceCost: 50,
+      electricityConsumption: 55,
+      waterConsumption: 40,
+    ),
   );
 
   // Industrial
@@ -193,6 +366,13 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 600,
     maxLevel: 3,
     icon: Icons.factory_rounded,
+    resources: BuildingResourceConfig(
+      industrialIncome: 150,
+      maintenanceCost: 20,
+      electricityConsumption: 40,
+      waterConsumption: 35,
+      pollutionOutput: 25,
+    ),
   );
 
   static const industrialFacility = BuildingDefinition(
@@ -206,6 +386,13 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 1600,
     maxLevel: 3,
     icon: Icons.precision_manufacturing_rounded,
+    resources: BuildingResourceConfig(
+      industrialIncome: 450,
+      maintenanceCost: 60,
+      electricityConsumption: 110,
+      waterConsumption: 90,
+      pollutionOutput: 65,
+    ),
   );
 
   // Public services
@@ -220,6 +407,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 1000,
     maxLevel: 3,
     icon: Icons.local_hospital_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 70,
+      electricityConsumption: 25,
+      waterConsumption: 20,
+      happinessBonus: 12,
+    ),
   );
 
   static const school = BuildingDefinition(
@@ -233,6 +426,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 700,
     maxLevel: 3,
     icon: Icons.school_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 45,
+      electricityConsumption: 18,
+      waterConsumption: 15,
+      happinessBonus: 8,
+    ),
   );
 
   static const policeStation = BuildingDefinition(
@@ -246,6 +445,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 350,
     maxLevel: 3,
     icon: Icons.local_police_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 25,
+      electricityConsumption: 8,
+      waterConsumption: 6,
+      happinessBonus: 6,
+    ),
   );
 
   static const fireStation = BuildingDefinition(
@@ -259,6 +464,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 350,
     maxLevel: 3,
     icon: Icons.fire_truck_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 25,
+      electricityConsumption: 8,
+      waterConsumption: 6,
+      happinessBonus: 6,
+    ),
   );
 
   // Infrastructure
@@ -273,6 +484,9 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 0,
     maxLevel: 1,
     icon: Icons.add_road_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 1,
+    ),
   );
 
   static const powerPlant = BuildingDefinition(
@@ -286,6 +500,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 1400,
     maxLevel: 3,
     icon: Icons.bolt_rounded,
+    resources: BuildingResourceConfig(
+      electricityProduction: 250,
+      maintenanceCost: 80,
+      waterConsumption: 20,
+      pollutionOutput: 15,
+    ),
   );
 
   static const waterFacility = BuildingDefinition(
@@ -299,6 +519,11 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 800,
     maxLevel: 3,
     icon: Icons.water_drop_rounded,
+    resources: BuildingResourceConfig(
+      waterProduction: 250,
+      maintenanceCost: 60,
+      electricityConsumption: 25,
+    ),
   );
 
   // Environment
@@ -313,6 +538,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 250,
     maxLevel: 3,
     icon: Icons.park_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 15,
+      waterConsumption: 10,
+      pollutionReduction: 20,
+      happinessBonus: 10,
+    ),
   );
 
   static const garden = BuildingDefinition(
@@ -326,6 +557,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 100,
     maxLevel: 2,
     icon: Icons.yard_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 8,
+      waterConsumption: 5,
+      pollutionReduction: 10,
+      happinessBonus: 6,
+    ),
   );
 
   static const solarPlant = BuildingDefinition(
@@ -339,6 +576,12 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 1100,
     maxLevel: 3,
     icon: Icons.solar_power_rounded,
+    resources: BuildingResourceConfig(
+      electricityProduction: 160,
+      maintenanceCost: 35,
+      pollutionReduction: 5,
+      happinessBonus: 3,
+    ),
   );
 
   static const waterTreatment = BuildingDefinition(
@@ -352,6 +595,13 @@ abstract final class BuildingRegistry {
     baseUpgradeCost: 950,
     maxLevel: 3,
     icon: Icons.waves_rounded,
+    resources: BuildingResourceConfig(
+      waterProduction: 140,
+      maintenanceCost: 50,
+      electricityConsumption: 30,
+      pollutionReduction: 25,
+      happinessBonus: 4,
+    ),
   );
 
   /// Map of all registered buildings by their unique [id].

@@ -8,6 +8,7 @@ import 'package:city_builder_2040/game/engine/map_camera.dart';
 import 'package:city_builder_2040/game/engine/map_camera_controller.dart';
 import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
+import 'package:city_builder_2040/providers/economy_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/screens/game/desktop_game_layout.dart';
 import 'package:city_builder_2040/screens/game/game_shortcuts.dart';
@@ -64,6 +65,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Keep simulation ticker active while GameScreen is mounted
+    ref.watch(simulationTickerProvider);
+
     final map = _map;
     final controller = _controller;
     if (map == null || controller == null) return const _NoCityView();

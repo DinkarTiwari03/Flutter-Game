@@ -2,6 +2,7 @@ import 'package:city_builder_2040/core/constants/app_constants.dart';
 import 'package:city_builder_2040/core/utils/app_exception.dart';
 import 'package:city_builder_2040/core/utils/id_generator.dart';
 import 'package:city_builder_2040/models/city.dart';
+import 'package:city_builder_2040/models/resource_ledger.dart';
 import 'package:city_builder_2040/repositories/building_repository.dart';
 import 'package:city_builder_2040/repositories/city_repository.dart';
 import 'package:city_builder_2040/repositories/mission_repository.dart';
@@ -63,6 +64,7 @@ class CityService {
       updatedAt: now,
     );
     await _cities.saveCity(city);
+    await _resources.saveLedger(ResourceLedger.initial(city.id, now: now));
     return city;
   }
 

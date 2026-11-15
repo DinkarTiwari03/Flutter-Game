@@ -4,6 +4,7 @@ import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/number_format.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
+import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/widgets/game_card.dart';
 
 /// Floating HUD displayed during building placement.
@@ -19,8 +20,17 @@ class PlacementHud extends ConsumerWidget {
     if (def == null) return const SizedBox.shrink();
 
     final validation = placement.validation;
-    final isValid = validation?.isValid ?? false;
-    final statusMessage = validation?.message ?? 'Positioning...';
+    final isPositionValid = validation?.isValid ?? false;
+    final currentCoins = ref.watch(cityStatsProvider)?.coins ?? 0;
+    final hasFunds = currentCoins >= def.cost;
+    final isValid = isPositionValid && hasFunds;
+
+    final String statusMessage;
+    if (!hasFunds) {
+      statusMessage = 'Insufficient Coins (¢${def.cost})';
+    } else {
+      statusMessage = validation?.message ?? 'Positioning...';
+    }
 
     return GameCard(
       key: const ValueKey('placement-hud'),

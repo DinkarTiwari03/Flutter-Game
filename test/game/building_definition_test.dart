@@ -75,5 +75,26 @@ void main() {
       // level 2: 50% of (150 + 100) = 125
       expect(house.demolitionRefund(2), 125);
     });
+
+    test('resource behavior scales with upgrade tiers', () {
+      const apt = BuildingRegistry.apartments; // base housing = 60, powerCons = 15
+      expect(apt.effectiveHousingCapacity(1), 60);
+      expect(apt.effectiveHousingCapacity(2), 90); // 60 * 1.5
+
+      expect(apt.effectiveElectricityConsumption(1), 15);
+      expect(apt.effectiveElectricityConsumption(2), 20); // 15 * 1.3 = 19.5 -> 20
+
+      const power = BuildingRegistry.powerPlant; // base prod = 250
+      expect(power.effectiveElectricityProduction(1), 250);
+      expect(power.effectiveElectricityProduction(2), 375); // 250 * 1.5
+
+      const factory = BuildingRegistry.factory; // base pollution = 25
+      expect(factory.effectivePollutionOutput(1), 25);
+      expect(factory.effectivePollutionOutput(2), 31); // 25 * 1.25 = 31.25 -> 31
+
+      const park = BuildingRegistry.park; // base reduction = 20, happiness = 10
+      expect(park.effectivePollutionReduction(1), 20);
+      expect(park.effectiveHappinessBonus(1), 10);
+    });
   });
 }

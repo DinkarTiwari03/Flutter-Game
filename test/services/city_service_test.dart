@@ -40,6 +40,9 @@ void main() {
       expect(city.name, 'Neo Harbor');
       expect(city.id, isNotEmpty);
       expect((await cities.getCity(city.id))!.name, 'Neo Harbor');
+      final ledger = await resources.getLedger(city.id);
+      expect(ledger, isNotNull);
+      expect(ledger!.coins, 25000);
     },
   );
 

@@ -26,12 +26,14 @@ class CompactTopBar extends ConsumerWidget {
     if (city == null || stats == null) return const SizedBox.shrink();
 
     final happiness = happinessStyle(stats.happiness);
+    final pollution = pollutionStyle(stats.pollution);
     final chips = [
       ResourceChip(
         icon: Icons.monetization_on_rounded,
         value: formatCompact(stats.coins),
         label: 'Coins',
         color: AppColors.sunrise,
+        isWarning: stats.isLowCoins,
       ),
       ResourceChip(
         icon: Icons.groups_rounded,
@@ -43,19 +45,29 @@ class CompactTopBar extends ConsumerWidget {
         icon: Icons.bolt_rounded,
         value: '${stats.electricity}%',
         label: 'Electricity',
-        color: AppColors.sunrise,
+        color: stats.isElectricityDeficit ? AppColors.coral : AppColors.sunrise,
+        isWarning: stats.isElectricityDeficit,
       ),
       ResourceChip(
         icon: Icons.water_drop_rounded,
         value: '${stats.water}%',
         label: 'Water',
-        color: AppColors.aqua,
+        color: stats.isWaterDeficit ? AppColors.coral : AppColors.aqua,
+        isWarning: stats.isWaterDeficit,
       ),
       ResourceChip(
         icon: happiness.icon,
         value: '${stats.happiness}%',
         label: 'Happiness',
         color: happiness.color,
+        isWarning: stats.isUnhappy,
+      ),
+      ResourceChip(
+        icon: pollution.icon,
+        value: '${stats.pollution}%',
+        label: 'Pollution',
+        color: pollution.color,
+        isWarning: stats.isPolluted,
       ),
     ];
 

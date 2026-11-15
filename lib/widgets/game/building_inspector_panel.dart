@@ -6,12 +6,13 @@ import 'package:city_builder_2040/core/utils/number_format.dart';
 import 'package:city_builder_2040/game/buildings/building_definition.dart';
 import 'package:city_builder_2040/models/building.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
+import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/widgets/game_card.dart';
 
 /// Inspection and management panel for a placed building.
 ///
-/// Provides building status, upgrade controls, and demolition interface with
-/// calculated refund amounts.
+/// Provides building status, resource impacts, upgrade controls, and demolition
+/// interface with calculated refund amounts and financial validation.
 class BuildingInspectorPanel extends ConsumerWidget {
   const BuildingInspectorPanel({
     super.key,
@@ -31,6 +32,22 @@ class BuildingInspectorPanel extends ConsumerWidget {
     final isMaxLevel = building.level >= def.maxLevel;
     final upgradeCost = def.upgradeCost(building.level);
     final refund = def.demolitionRefund(building.level);
+
+    final currentCoins = ref.watch(cityStatsProvider)?.coins ?? 0;
+    final canAffordUpgrade = !isMaxLevel && upgradeCost != null && currentCoins >= upgradeCost;
+
+    // Building resource behavior stats
+    final housing = def.effectiveHousingCapacity(building.level);
+    final powerProd = def.effectiveElectricityProduction(building.level);
+    final powerCons = def.effectiveElectricityConsumption(building.level);
+    final waterProd = def.effectiveWaterProduction(building.level);
+    final waterCons = def.effectiveWaterConsumption(building.level);
+    final upkeep = def.effectiveMaintenance(building.level);
+    final commercialIncome = def.effectiveCommercialIncome(building.level);
+    final industrialIncome = def.effectiveIndustrialIncome(building.level);
+    final pollutionOut = def.effectivePollutionOutput(building.level);
+    final pollutionRed = def.effectivePollutionReduction(building.level);
+    final happinessBonus = def.effectiveHappinessBonus(building.level);
 
     return GameCard(
       key: const ValueKey('building-inspector-panel'),
@@ -118,6 +135,94 @@ class BuildingInspectorPanel extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: AppSpacing.xs),
+
+          // Resource behavior summary
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: 4,
+                children: [
+                  if (housing > 0)
+                    _ResourceBadge(
+                      icon: Icons.people_rounded,
+                      label: 'Housing: +$housing',
+                      color: AppColors.sky,
+                    ),
+                  if (commercialIncome > 0)
+                    _ResourceBadge(
+                      icon: Icons.storefront_rounded,
+                      label: 'Income: +¢$commercialIncome/t',
+                      color: AppColors.teal,
+                    ),
+                  if (industrialIncome > 0)
+                    _ResourceBadge(
+                      icon: Icons.precision_manufacturing_rounded,
+                      label: 'Industry: +¢$industrialIncome/t',
+                      color: AppColors.teal,
+                    ),
+                  if (upkeep > 0)
+                    _ResourceBadge(
+                      icon: Icons.build_rounded,
+                      label: 'Upkeep: -¢$upkeep/t',
+                      color: AppColors.coral,
+                    ),
+                  if (powerProd > 0)
+                    _ResourceBadge(
+                      icon: Icons.bolt_rounded,
+                      label: 'Power: +${powerProd}kW',
+                      color: AppColors.sunrise,
+                    ),
+                  if (powerCons > 0)
+                    _ResourceBadge(
+                      icon: Icons.bolt_rounded,
+                      label: 'Power: -${powerCons}kW',
+                      color: Colors.orange.shade700,
+                    ),
+                  if (waterProd > 0)
+                    _ResourceBadge(
+                      icon: Icons.water_drop_rounded,
+                      label: 'Water: +${waterProd}kL',
+                      color: AppColors.aqua,
+                    ),
+                  if (waterCons > 0)
+                    _ResourceBadge(
+                      icon: Icons.water_drop_rounded,
+                      label: 'Water: -${waterCons}kL',
+                      color: Colors.lightBlue.shade700,
+                    ),
+                  if (pollutionOut > 0)
+                    _ResourceBadge(
+                      icon: Icons.grain_rounded,
+                      label: 'Pollution: +$pollutionOut',
+                      color: AppColors.coral,
+                    ),
+                  if (pollutionRed > 0)
+                    _ResourceBadge(
+                      icon: Icons.eco_rounded,
+                      label: 'Eco Clean: -$pollutionRed',
+                      color: AppColors.aqua,
+                    ),
+                  if (happinessBonus > 0)
+                    _ResourceBadge(
+                      icon: Icons.sentiment_satisfied_rounded,
+                      label: 'Happiness: +$happinessBonus',
+                      color: AppColors.teal,
+                    ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
 
           // Upgrade Interface
@@ -125,7 +230,11 @@ class BuildingInspectorPanel extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.divider),
+              border: Border.all(
+                color: !isMaxLevel && !canAffordUpgrade
+                    ? AppColors.coral.withAlpha(120)
+                    : AppColors.divider,
+              ),
             ),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
@@ -146,20 +255,31 @@ class BuildingInspectorPanel extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.monetization_on_rounded,
                                 size: 14,
-                                color: AppColors.sunrise,
+                                color: canAffordUpgrade ? AppColors.sunrise : AppColors.coral,
                               ),
                               const SizedBox(width: 3),
                               Text(
                                 formatNumber(upgradeCost),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.deepBlue,
+                                  color: canAffordUpgrade ? AppColors.deepBlue : AppColors.coral,
                                 ),
                               ),
+                              if (!canAffordUpgrade) ...[
+                                const SizedBox(width: 6),
+                                const Text(
+                                  '(Insufficient Coins)',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.coral,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ],
@@ -169,8 +289,9 @@ class BuildingInspectorPanel extends ConsumerWidget {
                   ElevatedButton(
                     key: const ValueKey('btn-upgrade-building'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isMaxLevel ? Colors.grey.shade300 : AppColors.teal,
+                      backgroundColor: isMaxLevel || !canAffordUpgrade
+                          ? Colors.grey.shade300
+                          : AppColors.teal,
                       foregroundColor: AppColors.navy,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -182,7 +303,7 @@ class BuildingInspectorPanel extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
-                    onPressed: isMaxLevel
+                    onPressed: isMaxLevel || !canAffordUpgrade
                         ? null
                         : () async {
                             await ref
@@ -273,6 +394,37 @@ class BuildingInspectorPanel extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ResourceBadge extends StatelessWidget {
+  const _ResourceBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade800,
+          ),
+        ),
+      ],
     );
   }
 }

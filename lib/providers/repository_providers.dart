@@ -11,6 +11,7 @@ import 'package:city_builder_2040/repositories/player_progress_repository.dart';
 import 'package:city_builder_2040/repositories/resource_repository.dart';
 import 'package:city_builder_2040/services/building_service.dart';
 import 'package:city_builder_2040/services/city_service.dart';
+import 'package:city_builder_2040/services/economy_service.dart';
 
 // The single place where concrete repository implementations are chosen.
 // Everything else depends on the interfaces only.
@@ -40,6 +41,12 @@ final playerProgressRepositoryProvider = Provider<PlayerProgressRepository>(
   (ref) => MemoryPlayerProgressRepository(),
 );
 
+final economyServiceProvider = Provider<EconomyService>((ref) {
+  return EconomyService(
+    resources: ref.watch(resourceRepositoryProvider),
+  );
+});
+
 final cityServiceProvider = Provider<CityService>((ref) {
   return CityService(
     cities: ref.watch(cityRepositoryProvider),
@@ -52,5 +59,7 @@ final cityServiceProvider = Provider<CityService>((ref) {
 final buildingServiceProvider = Provider<BuildingService>((ref) {
   return BuildingService(
     buildings: ref.watch(buildingRepositoryProvider),
+    resources: ref.watch(resourceRepositoryProvider),
+    economy: ref.watch(economyServiceProvider),
   );
 });

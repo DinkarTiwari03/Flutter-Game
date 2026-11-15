@@ -6,8 +6,11 @@ import 'package:city_builder_2040/game/map/grid_point.dart';
 import 'package:city_builder_2040/game/map/map_config.dart';
 import 'package:city_builder_2040/game/map/map_generator.dart';
 import 'package:city_builder_2040/game/map/tile_type.dart';
+import 'package:city_builder_2040/models/resource_ledger.dart';
 import 'package:city_builder_2040/repositories/memory/memory_building_repository.dart';
+import 'package:city_builder_2040/repositories/memory/memory_resource_repository.dart';
 import 'package:city_builder_2040/services/building_service.dart';
+import 'package:city_builder_2040/services/economy_service.dart';
 
 void main() {
   group('BuildingService', () {
@@ -147,6 +150,106 @@ void main() {
       expect(refund, 75);
       final inRepo = await repo.getBuildings('c1');
       expect(inRepo, isEmpty);
+    });
+
+    group('with EconomyService attached', () {
+      late MemoryResourceRepository resourceRepo;
+      late EconomyService economy;
+      late BuildingService econService;
+
+      setUp(() {
+        resourceRepo = MemoryResourceRepository();
+        economy = EconomyService(
+          resources: resourceRepo,
+          idGenerator: IdGenerator(),
+          clock: () => DateTime.utc(2040, 1, 1),
+        );
+        econService = BuildingService(
+          buildings: repo,
+          resources: resourceRepo,
+          economy: economy,
+          idGenerator: IdGenerator(),
+          clock: () => DateTime.utc(2040, 1, 1),
+        );
+      });
+
+      test('deducts construction cost from ledger', () async {
+        await economy.getOrInitLedger('c1'); // starts with 25000 coins
+        final grass = findTileOfType(TileType.grass);
+
+        await econService.placeBuilding(
+          cityId: 'c1',
+          definition: BuildingRegistry.smallHouse, // cost 150
+          position: grass,
+          map: map,
+          existingBuildings: [],
+        );
+
+        final ledger = await resourceRepo.getLedger('c1');
+        expect(ledger?.coins, 25000 - 150);
+      });
+
+      test('throws ValidationException when coins are insufficient to build', () async {
+        final brokeLedger = ResourceLedger.initial('c1', startingCoins: 50);
+        await resourceRepo.saveLedger(brokeLedger);
+        final grass = findTileOfType(TileType.grass);
+
+        expect(
+          () => econService.placeBuilding(
+            cityId: 'c1',
+            definition: BuildingRegistry.smallHouse, // cost 150
+            position: grass,
+            map: map,
+            existingBuildings: [],
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+      });
+
+      test('deducts upgrade cost from ledger', () async {
+        await economy.getOrInitLedger('c1'); // 25000
+        final grass = findTileOfType(TileType.grass);
+
+        final building = await econService.placeBuilding(
+          cityId: 'c1',
+          definition: BuildingRegistry.smallHouse, // 150 deducted -> 24850
+          position: grass,
+          map: map,
+          existingBuildings: [],
+        );
+
+        await econService.upgradeBuilding(
+          cityId: 'c1',
+          buildingId: building.id,
+          currentBuildings: [building], // base upgrade cost 100
+        );
+
+        final ledger = await resourceRepo.getLedger('c1');
+        expect(ledger?.coins, 25000 - 150 - 100);
+      });
+
+      test('deposits demolition refund back into ledger', () async {
+        await economy.getOrInitLedger('c1');
+        final grass = findTileOfType(TileType.grass);
+
+        final building = await econService.placeBuilding(
+          cityId: 'c1',
+          definition: BuildingRegistry.smallHouse, // cost 150
+          position: grass,
+          map: map,
+          existingBuildings: [],
+        );
+
+        final refund = await econService.demolishBuilding(
+          cityId: 'c1',
+          buildingId: building.id,
+          currentBuildings: [building],
+        );
+
+        expect(refund, 75);
+        final ledger = await resourceRepo.getLedger('c1');
+        expect(ledger?.coins, 25000 - 150 + 75);
+      });
     });
   });
 }

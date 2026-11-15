@@ -4,6 +4,7 @@ import 'package:city_builder_2040/game/buildings/placement_validator.dart';
 import 'package:city_builder_2040/game/map/grid_point.dart';
 import 'package:city_builder_2040/models/building.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
+import 'package:city_builder_2040/providers/economy_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/providers/repository_providers.dart';
 
@@ -39,6 +40,7 @@ class CityBuildingsNotifier extends AsyncNotifier<List<Building>> {
     );
 
     state = AsyncData([...current, placed]);
+    await ref.read(cityLedgerProvider.notifier).reload();
     return placed;
   }
 
@@ -58,6 +60,7 @@ class CityBuildingsNotifier extends AsyncNotifier<List<Building>> {
     state = AsyncData(
       current.map((b) => b.id == buildingId ? upgraded : b).toList(),
     );
+    await ref.read(cityLedgerProvider.notifier).reload();
     return upgraded;
   }
 
@@ -75,6 +78,7 @@ class CityBuildingsNotifier extends AsyncNotifier<List<Building>> {
     );
 
     state = AsyncData(current.where((b) => b.id != buildingId).toList());
+    await ref.read(cityLedgerProvider.notifier).reload();
     return refund;
   }
 }

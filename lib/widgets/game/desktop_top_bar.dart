@@ -23,6 +23,7 @@ class DesktopTopBar extends ConsumerWidget {
 
     final textTheme = Theme.of(context).textTheme;
     final happiness = happinessStyle(stats.happiness);
+    final pollution = pollutionStyle(stats.pollution);
 
     return DecoratedBox(
       decoration: const BoxDecoration(gradient: AppColors.skyGradient),
@@ -70,28 +71,35 @@ class DesktopTopBar extends ConsumerWidget {
                   ResourceCard(
                     icon: Icons.monetization_on_rounded,
                     value: formatNumber(stats.coins),
-                    label: 'Coins',
+                    label: stats.netIncome != 0
+                        ? 'Coins (${stats.netIncome >= 0 ? '+' : ''}${stats.netIncome}/t)'
+                        : 'Coins',
                     color: AppColors.sunrise,
+                    isWarning: stats.isLowCoins,
                   ),
                   ResourceCard(
                     icon: Icons.groups_rounded,
                     value: formatNumber(stats.population),
-                    label: 'Population',
+                    label: stats.housingCapacity > 0
+                        ? 'Pop (${stats.population}/${stats.housingCapacity})'
+                        : 'Population',
                     color: AppColors.sky,
                   ),
                   ResourceCard(
                     icon: Icons.bolt_rounded,
                     value: '${stats.electricity}%',
                     label: 'Power',
-                    color: AppColors.sunrise,
+                    color: stats.isElectricityDeficit ? AppColors.coral : AppColors.sunrise,
                     progress: stats.electricity / 100,
+                    isWarning: stats.isElectricityDeficit,
                   ),
                   ResourceCard(
                     icon: Icons.water_drop_rounded,
                     value: '${stats.water}%',
                     label: 'Water',
-                    color: AppColors.aqua,
+                    color: stats.isWaterDeficit ? AppColors.coral : AppColors.aqua,
                     progress: stats.water / 100,
+                    isWarning: stats.isWaterDeficit,
                   ),
                   ResourceCard(
                     icon: happiness.icon,
@@ -99,6 +107,15 @@ class DesktopTopBar extends ConsumerWidget {
                     label: 'Happiness',
                     color: happiness.color,
                     progress: stats.happiness / 100,
+                    isWarning: stats.isUnhappy,
+                  ),
+                  ResourceCard(
+                    icon: pollution.icon,
+                    value: '${stats.pollution}%',
+                    label: 'Pollution',
+                    color: pollution.color,
+                    progress: stats.pollution / 100,
+                    isWarning: stats.isPolluted,
                   ),
                 ],
               ),

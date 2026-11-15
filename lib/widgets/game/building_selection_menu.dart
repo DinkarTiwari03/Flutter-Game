@@ -122,7 +122,7 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _BuildingOptionCard extends StatelessWidget {
+class _BuildingOptionCard extends ConsumerWidget {
   const _BuildingOptionCard({
     required this.definition,
     required this.onSelect,
@@ -132,14 +132,18 @@ class _BuildingOptionCard extends StatelessWidget {
   final VoidCallback onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final currentCoins = ref.watch(cityStatsProvider)?.coins ?? 0;
+    final canAfford = currentCoins >= definition.cost;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(
+          color: canAfford ? AppColors.divider : AppColors.coral.withAlpha(80),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.sm),
@@ -209,20 +213,31 @@ class _BuildingOptionCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.monetization_on_rounded,
                         size: 14,
-                        color: AppColors.sunrise,
+                        color: canAfford ? AppColors.sunrise : AppColors.coral,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         formatNumber(definition.cost),
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.deepBlue,
+                          color: canAfford ? AppColors.deepBlue : AppColors.coral,
                           fontSize: 12,
                         ),
                       ),
+                      if (!canAfford) ...[
+                        const SizedBox(width: 6),
+                        const Text(
+                          '(Low coins)',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.coral,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -231,7 +246,7 @@ class _BuildingOptionCard extends StatelessWidget {
             const SizedBox(width: AppSpacing.xs),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.teal,
+                backgroundColor: canAfford ? AppColors.teal : Colors.grey.shade300,
                 foregroundColor: AppColors.navy,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,

@@ -10,6 +10,7 @@ import 'package:city_builder_2040/models/city_stats.dart';
 import 'package:city_builder_2040/models/game_section.dart';
 import 'package:city_builder_2040/models/simulation_speed.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
+import 'package:city_builder_2040/providers/economy_providers.dart';
 
 /// The terrain of the active city. Generated from the city's id, so the same
 /// city always gets the same map.
@@ -27,10 +28,16 @@ final gameMapProvider = Provider<GameMap?>((ref) {
   );
 });
 
-/// Headline numbers for the HUD.
+/// Headline numbers for the HUD and dashboard, backed by live simulation snapshots.
 final cityStatsProvider = Provider<CityStats?>((ref) {
   final city = ref.watch(activeCityProvider);
-  return city == null ? null : CityStats.initial(city);
+  if (city == null) return null;
+
+  final snapshot = ref.watch(cityEconomySnapshotProvider);
+  if (snapshot != null) {
+    return CityStats.fromSnapshot(snapshot);
+  }
+  return CityStats.initial(city);
 });
 
 /// The tile the player has selected, if any. Resets when the city changes.
