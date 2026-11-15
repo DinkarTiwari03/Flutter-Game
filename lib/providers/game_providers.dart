@@ -19,11 +19,12 @@ final gameMapProvider = Provider<GameMap?>((ref) {
   if (city == null) return null;
   int clampSize(int value) =>
       value.clamp(GameConstants.minMapSize, GameConstants.maxMapSize).toInt();
+  final seed = city.seed != 0 ? city.seed : stableHash(city.id);
   return MapGenerator.generate(
     MapConfig(
       cols: clampSize(city.mapWidth),
       rows: clampSize(city.mapHeight),
-      seed: stableHash(city.id),
+      seed: seed,
     ),
   );
 });

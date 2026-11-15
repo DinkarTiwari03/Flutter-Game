@@ -6,6 +6,7 @@ import 'package:city_builder_2040/models/resource_ledger.dart';
 import 'package:city_builder_2040/models/resource_transaction.dart';
 import 'package:city_builder_2040/models/simulation_speed.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
+import 'package:city_builder_2040/providers/autosave_provider.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/providers/repository_providers.dart';
@@ -168,6 +169,11 @@ class SimulationTickerNotifier extends Notifier<int> {
   Future<void> tick() async {
     state = state + 1;
     await ref.read(cityLedgerProvider.notifier).simulateTick();
+
+    // Autosave periodically every 60 ticks
+    if (state % 60 == 0) {
+      await ref.read(autosaveTriggerProvider.notifier).save();
+    }
   }
 }
 

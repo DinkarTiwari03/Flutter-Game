@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/constants/app_constants.dart';
 import 'package:city_builder_2040/core/constants/app_routes.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/responsive.dart';
+import 'package:city_builder_2040/providers/active_city_provider.dart';
 import 'package:city_builder_2040/widgets/about_game_dialog.dart';
 import 'package:city_builder_2040/widgets/city_backdrop.dart';
 import 'package:city_builder_2040/widgets/city_logo.dart';
 import 'package:city_builder_2040/widgets/game_button.dart';
 import 'package:city_builder_2040/widgets/responsive_center.dart';
 
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends ConsumerWidget {
   const MainMenuScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final logoSize = context.responsive(
       compact: 88.0,
       medium: 104.0,
       expanded: 112.0,
     );
+    final latestCityAsync = ref.watch(latestCityProvider);
+    final latestCity = latestCityAsync.value;
 
     return Scaffold(
       body: CityBackdrop(
@@ -54,11 +58,20 @@ class MainMenuScreen extends StatelessWidget {
                               .pushNamed(AppRoutes.newGame),
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        // Enabled once game persistence exists.
-                        const GameButton(
-                          label: 'Continue',
+                        GameButton(
+                          label: latestCity != null
+                              ? 'Continue (${latestCity.name})'
+                              : 'Continue',
                           icon: Icons.history_rounded,
-                          onPressed: null,
+                          onPressed: latestCity != null
+                              ? () {
+                                  ref
+                                      .read(activeCityProvider.notifier)
+                                      .open(latestCity);
+                                  Navigator.of(context)
+                                      .pushNamed(AppRoutes.game);
+                                }
+                              : null,
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         GameButton(

@@ -39,6 +39,7 @@ class CityService {
     required String name,
     int mapWidth = AppConstants.defaultMapSize,
     int mapHeight = AppConstants.defaultMapSize,
+    int seed = 0,
   }) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) {
@@ -60,6 +61,7 @@ class CityService {
       name: trimmed,
       mapWidth: mapWidth,
       mapHeight: mapHeight,
+      seed: seed,
       createdAt: now,
       updatedAt: now,
     );

@@ -11,6 +11,7 @@ import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
 import 'package:city_builder_2040/models/city_event.dart';
 import 'package:city_builder_2040/models/progression_event.dart';
+import 'package:city_builder_2040/providers/autosave_provider.dart';
 import 'package:city_builder_2040/providers/economy_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/providers/progression_providers.dart';
@@ -20,6 +21,7 @@ import 'package:city_builder_2040/screens/game/game_shortcuts.dart';
 import 'package:city_builder_2040/screens/game/phone_game_layout.dart';
 import 'package:city_builder_2040/widgets/app_error_view.dart';
 import 'package:city_builder_2040/widgets/game_button.dart';
+import 'package:city_builder_2040/widgets/tutorial/tutorial_overlay.dart';
 
 /// The city gameplay screen.
 ///
@@ -34,7 +36,7 @@ class GameScreen extends ConsumerStatefulWidget {
 }
 
 class _GameScreenState extends ConsumerState<GameScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final _focusNode = FocusNode(debugLabel: 'game-screen');
   final _viewportKey = GlobalKey();
 
@@ -49,6 +51,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // The map belongs to the city that was open when the screen was created.
     final map = ref.read(gameMapProvider);
     if (map == null) return;
@@ -62,10 +65,20 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     _camera?.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Autosave on app background / pause — ensures no progress is lost.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      ref.read(autosaveTriggerProvider.notifier).save();
+    }
   }
 
   @override
@@ -180,27 +193,28 @@ class _GameScreenState extends ConsumerState<GameScreen>
       focusNode: _focusNode,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return switch (GameLayoutKind.of(constraints.biggest)) {
+          final layout = switch (GameLayoutKind.of(constraints.biggest)) {
             GameLayoutKind.desktop => DesktopGameLayout(
-              map: map,
-              controller: controller,
-              focusNode: _focusNode,
-              viewportKey: _viewportKey,
-            ),
+                map: map,
+                controller: controller,
+                focusNode: _focusNode,
+                viewportKey: _viewportKey,
+              ),
             GameLayoutKind.phoneLandscape => PhoneGameLayout(
-              map: map,
-              controller: controller,
-              focusNode: _focusNode,
-              viewportKey: _viewportKey,
-              landscape: true,
-            ),
+                map: map,
+                controller: controller,
+                focusNode: _focusNode,
+                viewportKey: _viewportKey,
+                landscape: true,
+              ),
             GameLayoutKind.phone => PhoneGameLayout(
-              map: map,
-              controller: controller,
-              focusNode: _focusNode,
-              viewportKey: _viewportKey,
-            ),
+                map: map,
+                controller: controller,
+                focusNode: _focusNode,
+                viewportKey: _viewportKey,
+              ),
           };
+          return Stack(children: [layout, const TutorialOverlay()]);
         },
       ),
     );
@@ -229,10 +243,9 @@ class _NoCityView extends StatelessWidget {
               label: 'Main menu',
               expand: false,
               variant: GameButtonVariant.secondary,
-              onPressed:
-                  () => Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil(AppRoutes.menu, (route) => false),
+              onPressed: () => Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(AppRoutes.menu, (route) => false),
             ),
           ],
         ),

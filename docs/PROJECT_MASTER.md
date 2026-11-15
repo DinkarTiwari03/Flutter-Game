@@ -98,6 +98,7 @@ Shared contract (documented on `CityRepository`):
 | 04 Resource management and economy system | Complete (6 core resources, deterministic simulation loop, income/expense breakdown, building resource properties, transaction handling, HUD & warning integration, tests, docs) |
 | 05 City simulation engine | Complete (Simulation clock, 24h day/night diurnal cycle with atmospheric map tinting, pause/1x/2x/3x speeds, demographics, labor & housing capacity simulation, building behaviors, positive civic events, tests, docs) |
 | 06 Missions, challenges and progression system | Complete (Missions across 4 categories, milestone challenges, player XP & level progression, building unlock gating, achievements, duplicate reward prevention, UI panels, tests, docs) |
+| 07 Persistence, polish and platform optimization | Complete (Local SQLite database via Drift, concrete local repositories, autosave on lifecycle and simulation loop, app restart recovery, first-time player tutorial, settings persistence, tests, docs) |
 
 ## Handoffs
 - [Phase 01](HANDOFFS/PHASE_01.md)
@@ -106,3 +107,4 @@ Shared contract (documented on `CityRepository`):
 - [Phase 04](HANDOFFS/PHASE_04.md)
 - [Phase 05](HANDOFFS/PHASE_05.md)
 - [Phase 06](HANDOFFS/PHASE_06.md)
+- [Phase 07](HANDOFFS/PHASE_07.md)

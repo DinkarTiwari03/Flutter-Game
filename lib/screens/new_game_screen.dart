@@ -9,6 +9,8 @@ import 'package:city_builder_2040/core/utils/error_handler.dart';
 import 'package:city_builder_2040/game/map/map_config.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
 import 'package:city_builder_2040/providers/repository_providers.dart';
+import 'package:city_builder_2040/providers/settings_provider.dart';
+import 'package:city_builder_2040/providers/tutorial_provider.dart';
 import 'package:city_builder_2040/widgets/game_button.dart';
 import 'package:city_builder_2040/widgets/game_card.dart';
 import 'package:city_builder_2040/widgets/game_scaffold.dart';
@@ -51,6 +53,10 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
           );
       if (!mounted) return;
       ref.read(activeCityProvider.notifier).open(city);
+      final settings = ref.read(settingsValueProvider);
+      if (!settings.tutorialCompleted) {
+        ref.read(tutorialProvider.notifier).start();
+      }
       await Navigator.of(context).pushReplacementNamed(AppRoutes.game);
     } on ValidationException catch (e) {
       if (mounted) setState(() => _error = e.message);
