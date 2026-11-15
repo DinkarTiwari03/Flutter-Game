@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'package:city_builder_2040/core/constants/game_constants.dart';
 import 'package:city_builder_2040/game/buildings/building_definition.dart';
 import 'package:city_builder_2040/models/building.dart';
 import 'package:city_builder_2040/models/city.dart';
@@ -48,6 +47,8 @@ class SimulationService {
   final EconomyService _economy;
   final ResourceRepository _resources;
   final DateTime Function() _clock;
+
+  ResourceRepository get resources => _resources;
 
   /// Calculates total jobs provided across all active buildings.
   int calculateTotalJobs(List<Building> buildings) {

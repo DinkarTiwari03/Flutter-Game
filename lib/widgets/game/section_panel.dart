@@ -9,6 +9,7 @@ import 'package:city_builder_2040/models/game_section.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/widgets/game/building_selection_menu.dart';
 import 'package:city_builder_2040/widgets/game/game_navigation.dart';
+import 'package:city_builder_2040/widgets/game/missions/missions_main_panel.dart';
 import 'package:city_builder_2040/widgets/game_card.dart';
 
 /// Title row shared by the phone sheet and the desktop side panel.
@@ -154,14 +155,7 @@ class SectionPanelContent extends ConsumerWidget {
           ('Upkeep', 'Not simulated'),
         ],
       ),
-      GameSection.missions => const _InfoRows(
-        note: 'Missions unlock once the city can grow.',
-        rows: [
-          ('Welcome to the city', 'Locked'),
-          ('First residents', 'Locked'),
-          ('Power up', 'Locked'),
-        ],
-      ),
+      GameSection.missions => const MissionsMainPanel(),
       GameSection.statistics => const _StatisticsRows(),
     };
   }

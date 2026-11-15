@@ -104,6 +104,7 @@ class BuildingDefinition {
     required this.cost,
     required this.baseUpgradeCost,
     this.maxLevel = 3,
+    this.requiredPlayerLevel = 1,
     required this.icon,
     this.color,
     this.resources = const BuildingResourceConfig(),
@@ -128,6 +129,9 @@ class BuildingDefinition {
 
   /// Maximum upgrade tier.
   final int maxLevel;
+
+  /// Minimum player level required to unlock and construct this building.
+  final int requiredPlayerLevel;
 
   final IconData icon;
   final Color? color;
@@ -326,6 +330,7 @@ abstract final class BuildingRegistry {
     cost: 1800,
     baseUpgradeCost: 1200,
     maxLevel: 4,
+    requiredPlayerLevel: 3,
     icon: Icons.location_city_rounded,
     resources: BuildingResourceConfig(
       housingCapacity: 240,
@@ -367,6 +372,7 @@ abstract final class BuildingRegistry {
     cost: 1200,
     baseUpgradeCost: 800,
     maxLevel: 3,
+    requiredPlayerLevel: 2,
     icon: Icons.local_mall_rounded,
     resources: BuildingResourceConfig(
       commercialIncome: 200,
@@ -387,6 +393,7 @@ abstract final class BuildingRegistry {
     cost: 2400,
     baseUpgradeCost: 1500,
     maxLevel: 4,
+    requiredPlayerLevel: 3,
     icon: Icons.domain_rounded,
     resources: BuildingResourceConfig(
       commercialIncome: 420,
@@ -429,6 +436,7 @@ abstract final class BuildingRegistry {
     cost: 2500,
     baseUpgradeCost: 1600,
     maxLevel: 3,
+    requiredPlayerLevel: 2,
     icon: Icons.precision_manufacturing_rounded,
     resources: BuildingResourceConfig(
       industrialIncome: 450,
@@ -612,6 +620,7 @@ abstract final class BuildingRegistry {
     cost: 150,
     baseUpgradeCost: 100,
     maxLevel: 2,
+    requiredPlayerLevel: 2,
     icon: Icons.yard_rounded,
     resources: BuildingResourceConfig(
       maintenanceCost: 8,
@@ -688,6 +697,9 @@ abstract final class BuildingRegistry {
 
   /// Retrieves a building definition by its string [typeId].
   static BuildingDefinition? get(String typeId) => all[typeId];
+
+  /// Alias for [get] to look up a building definition by its ID.
+  static BuildingDefinition? findById(String typeId) => all[typeId];
 
   /// Lists all building definitions matching the given [category].
   static List<BuildingDefinition> byCategory(BuildingCategory category) {

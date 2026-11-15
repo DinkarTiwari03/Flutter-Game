@@ -26,7 +26,6 @@ class CompactTopBar extends ConsumerWidget {
     final city = ref.watch(activeCityProvider);
     final stats = ref.watch(cityStatsProvider);
     final clock = ref.watch(simulationClockProvider);
-    final activeEvents = ref.watch(activeCityEventsProvider);
     if (city == null || stats == null) return const SizedBox.shrink();
 
     final happiness = happinessStyle(stats.happiness);

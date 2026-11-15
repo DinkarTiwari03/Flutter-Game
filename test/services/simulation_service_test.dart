@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:city_builder_2040/core/constants/game_constants.dart';
 import 'package:city_builder_2040/models/building.dart';
 import 'package:city_builder_2040/models/city.dart';
 import 'package:city_builder_2040/models/city_demographics.dart';

@@ -6,6 +6,7 @@ import 'package:city_builder_2040/core/utils/number_format.dart';
 import 'package:city_builder_2040/game/buildings/building_definition.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/progression_providers.dart';
 
 /// Interactive menu for browsing and selecting buildings to construct.
 class BuildingSelectionMenu extends ConsumerStatefulWidget {
@@ -136,135 +137,171 @@ class _BuildingOptionCard extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final currentCoins = ref.watch(cityStatsProvider)?.coins ?? 0;
     final canAfford = currentCoins >= definition.cost;
+    final playerProgress = ref.watch(playerProgressProvider).value;
+    final playerLevel = playerProgress?.level ?? 1;
+    final isUnlocked = playerLevel >= definition.requiredPlayerLevel ||
+        (playerProgress?.unlockedIds.contains(definition.id) ?? false);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: canAfford ? AppColors.divider : AppColors.coral.withAlpha(80),
+    return Opacity(
+      opacity: isUnlocked ? 1.0 : 0.65,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: !isUnlocked
+                ? AppColors.textSecondary.withAlpha(50)
+                : canAfford
+                    ? AppColors.divider
+                    : AppColors.coral.withAlpha(80),
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Row(
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: definition.accentColor.withAlpha(35),
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: Icon(
-                  definition.icon,
-                  color: definition.accentColor,
-                  size: 24,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Row(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: isUnlocked
+                      ? definition.accentColor.withAlpha(35)
+                      : AppColors.textSecondary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                ),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(
+                    isUnlocked ? definition.icon : Icons.lock_rounded,
+                    color: isUnlocked
+                        ? definition.accentColor
+                        : AppColors.textSecondary,
+                    size: 24,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          definition.name,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppColors.divider),
-                        ),
-                        child: Text(
-                          '${definition.width}x${definition.height}',
-                          style: textTheme.bodySmall?.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.teal,
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            definition.name,
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    definition.description,
-                    style: textTheme.bodySmall?.copyWith(fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.monetization_on_rounded,
-                        size: 14,
-                        color: canAfford ? AppColors.sunrise : AppColors.coral,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        formatNumber(definition.cost),
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: canAfford ? AppColors.deepBlue : AppColors.coral,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (!canAfford) ...[
-                        const SizedBox(width: 6),
-                        const Text(
-                          '(Low coins)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.coral,
+                        const SizedBox(width: AppSpacing.xs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: AppColors.divider),
+                          ),
+                          child: Text(
+                            '${definition.width}x${definition.height}',
+                            style: textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.teal,
+                            ),
                           ),
                         ),
                       ],
-                    ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      !isUnlocked
+                          ? 'Requires Mayor Level ${definition.requiredPlayerLevel}'
+                          : definition.description,
+                      style: textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: !isUnlocked
+                            ? AppColors.coral
+                            : AppColors.textSecondary,
+                        fontWeight: !isUnlocked ? FontWeight.w600 : null,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.monetization_on_rounded,
+                          size: 14,
+                          color: !isUnlocked
+                              ? AppColors.textSecondary
+                              : canAfford
+                                  ? AppColors.sunrise
+                                  : AppColors.coral,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          formatNumber(definition.cost),
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: !isUnlocked
+                                ? AppColors.textSecondary
+                                : canAfford
+                                    ? AppColors.deepBlue
+                                    : AppColors.coral,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (isUnlocked && !canAfford) ...[
+                          const SizedBox(width: 6),
+                          const Text(
+                            '(Low coins)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.coral,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: !isUnlocked
+                      ? Colors.grey.shade400
+                      : canAfford
+                          ? AppColors.teal
+                          : Colors.grey.shade300,
+                  foregroundColor: AppColors.navy,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: canAfford ? AppColors.teal : Colors.grey.shade300,
-                foregroundColor: AppColors.navy,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
                 ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                onPressed: (isUnlocked && canAfford) ? onSelect : null,
+                child: Text(
+                  !isUnlocked ? 'Locked' : 'Build',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w700),
                 ),
               ),
-              onPressed: onSelect,
-              child: const Text(
-                'Build',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -10,8 +10,10 @@ import 'package:city_builder_2040/game/engine/map_camera_controller.dart';
 import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
 import 'package:city_builder_2040/models/city_event.dart';
+import 'package:city_builder_2040/models/progression_event.dart';
 import 'package:city_builder_2040/providers/economy_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/progression_providers.dart';
 import 'package:city_builder_2040/providers/simulation_providers.dart';
 import 'package:city_builder_2040/screens/game/desktop_game_layout.dart';
 import 'package:city_builder_2040/screens/game/game_shortcuts.dart';
@@ -96,6 +98,73 @@ class _GameScreenState extends ConsumerState<GameScreen>
             ),
             backgroundColor: AppColors.navy,
             duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
+    ref.listen<List<ProgressionEvent>>(pendingProgressionEventsProvider,
+        (prev, next) {
+      if (next.isNotEmpty) {
+        final event =
+            ref.read(pendingProgressionEventsProvider.notifier).consume();
+        if (event == null) return;
+
+        final (icon, title, subtitle, color) = switch (event) {
+          MissionCompletedEvent e => (
+              Icons.assignment_turned_in_rounded,
+              'Mission Completed!',
+              e.title,
+              AppColors.aqua,
+            ),
+          AchievementUnlockedEvent e => (
+              Icons.emoji_events_rounded,
+              'Achievement: ${e.icon}',
+              e.title,
+              AppColors.sunrise,
+            ),
+          LevelUpEvent e => (
+              Icons.upgrade_rounded,
+              'Level Up!',
+              'Mayor Level ${e.newLevel} reached!',
+              AppColors.teal,
+            ),
+          RewardClaimedEvent e => (
+              Icons.card_giftcard_rounded,
+              'Reward Claimed!',
+              '+${e.coinsAwarded} Coins, +${e.xpAwarded} XP',
+              AppColors.sky,
+            ),
+          BuildingUnlockedEvent e => (
+              Icons.lock_open_rounded,
+              'New Building Unlocked!',
+              e.buildingId,
+              AppColors.teal,
+            ),
+        };
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(icon, color: color),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(subtitle),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.navy,
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
           ),
         );

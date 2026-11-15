@@ -68,6 +68,9 @@ class CityEvent {
 
   bool get isExpired => remainingTicks <= 0;
 
+  /// Remaining in-game hours (1 tick = 1 in-game hour).
+  int get remainingHours => remainingTicks;
+
   /// Decrements remaining duration by 1 tick.
   CityEvent tick() => copyWith(remainingTicks: remainingTicks - 1);
 
