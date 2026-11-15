@@ -12,6 +12,7 @@ import 'package:city_builder_2040/repositories/resource_repository.dart';
 import 'package:city_builder_2040/services/building_service.dart';
 import 'package:city_builder_2040/services/city_service.dart';
 import 'package:city_builder_2040/services/economy_service.dart';
+import 'package:city_builder_2040/services/simulation_service.dart';
 
 // The single place where concrete repository implementations are chosen.
 // Everything else depends on the interfaces only.
@@ -61,5 +62,12 @@ final buildingServiceProvider = Provider<BuildingService>((ref) {
     buildings: ref.watch(buildingRepositoryProvider),
     resources: ref.watch(resourceRepositoryProvider),
     economy: ref.watch(economyServiceProvider),
+  );
+});
+
+final simulationServiceProvider = Provider<SimulationService>((ref) {
+  return SimulationService(
+    economy: ref.watch(economyServiceProvider),
+    resources: ref.watch(resourceRepositoryProvider),
   );
 });

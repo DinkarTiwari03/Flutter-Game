@@ -96,9 +96,11 @@ Shared contract (documented on `CityRepository`):
 | 02 Responsive Game UI & Isometric City Map | Complete (isometric terrain renderer, camera controller, responsive phone & desktop layouts, HUD, controls, shortcuts, tests, docs) |
 | 03 Cross-platform building placement system | Complete (19 building definitions, 6 categories, placement validation, isometric building art, depth-sorted renderer, ghost preview, inspector panel, upgrade/demolish, tests, docs) |
 | 04 Resource management and economy system | Complete (6 core resources, deterministic simulation loop, income/expense breakdown, building resource properties, transaction handling, HUD & warning integration, tests, docs) |
+| 05 City simulation engine | Complete (Simulation clock, 24h day/night diurnal cycle with atmospheric map tinting, pause/1x/2x/3x speeds, demographics, labor & housing capacity simulation, building behaviors, positive civic events, tests, docs) |
 
 ## Handoffs
 - [Phase 01](HANDOFFS/PHASE_01.md)
 - [Phase 02](HANDOFFS/PHASE_02.md)
 - [Phase 03](HANDOFFS/PHASE_03.md)
 - [Phase 04](HANDOFFS/PHASE_04.md)
+- [Phase 05](HANDOFFS/PHASE_05.md)

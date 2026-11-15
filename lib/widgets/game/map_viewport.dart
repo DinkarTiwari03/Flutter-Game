@@ -14,6 +14,7 @@ import 'package:city_builder_2040/game/map/grid_point.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/simulation_providers.dart';
 
 /// Interactive view of the isometric map.
 ///
@@ -319,6 +320,7 @@ class _MapViewportState extends ConsumerState<MapViewport>
     final buildings = ref.watch(cityBuildingsProvider).value ?? const [];
     final placement = ref.watch(placementProvider);
     final selectedBuildingId = ref.watch(selectedBuildingIdProvider);
+    final clock = ref.watch(simulationClockProvider);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -355,6 +357,13 @@ class _MapViewportState extends ConsumerState<MapViewport>
                   pop: _pop,
                   showGrid: showGrid,
                 ),
+              ),
+            ),
+            // Atmospheric day/night ambient lighting overlay
+            IgnorePointer(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 800),
+                color: clock.phase.ambientColor,
               ),
             ),
           ],

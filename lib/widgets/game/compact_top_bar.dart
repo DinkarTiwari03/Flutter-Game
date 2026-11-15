@@ -4,8 +4,10 @@ import 'package:city_builder_2040/core/constants/app_routes.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/number_format.dart';
+import 'package:city_builder_2040/models/simulation_clock.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/simulation_providers.dart';
 import 'package:city_builder_2040/widgets/game/resource_chip.dart';
 import 'package:city_builder_2040/widgets/game/simulation_speed_control.dart';
 
@@ -23,6 +25,8 @@ class CompactTopBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final city = ref.watch(activeCityProvider);
     final stats = ref.watch(cityStatsProvider);
+    final clock = ref.watch(simulationClockProvider);
+    final activeEvents = ref.watch(activeCityEventsProvider);
     if (city == null || stats == null) return const SizedBox.shrink();
 
     final happiness = happinessStyle(stats.happiness);
@@ -142,6 +146,8 @@ class CompactTopBar extends ConsumerWidget {
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
+                              _ClockPill(clock: clock),
+                              const SizedBox(width: AppSpacing.xs),
                               for (var i = 0; i < chips.length; i++) ...[
                                 if (i > 0)
                                   const SizedBox(width: AppSpacing.xs),
@@ -175,6 +181,8 @@ class CompactTopBar extends ConsumerWidget {
                         ),
                         child: Row(
                           children: [
+                            _ClockPill(clock: clock),
+                            const SizedBox(width: AppSpacing.xs),
                             for (var i = 0; i < chips.length; i++) ...[
                               if (i > 0) const SizedBox(width: AppSpacing.xs),
                               chips[i],
@@ -209,6 +217,38 @@ class _BarIconButton extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       icon: Icon(icon),
       onPressed: onPressed,
+    );
+  }
+}
+
+class _ClockPill extends StatelessWidget {
+  const _ClockPill({required this.clock});
+
+  final SimulationClock clock;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.onDarkTrack,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(clock.phase.icon, size: 14, color: AppColors.aqua),
+          const SizedBox(width: 4),
+          Text(
+            clock.formattedFull,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textOnDark,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

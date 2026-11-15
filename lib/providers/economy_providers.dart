@@ -9,6 +9,7 @@ import 'package:city_builder_2040/providers/active_city_provider.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/providers/repository_providers.dart';
+import 'package:city_builder_2040/providers/simulation_providers.dart';
 
 /// Manages the [ResourceLedger] for the active city.
 class CityLedgerNotifier extends AsyncNotifier<ResourceLedger?> {
@@ -36,18 +37,33 @@ class CityLedgerNotifier extends AsyncNotifier<ResourceLedger?> {
     if (city == null || currentLedger == null) return null;
 
     final buildings = ref.read(cityBuildingsProvider).value ?? [];
-    final economy = ref.read(economyServiceProvider);
+    final simulation = ref.read(simulationServiceProvider);
     final resourcesRepo = ref.read(resourceRepositoryProvider);
+    final clock = ref.read(simulationClockProvider);
+    final demographics = ref.read(cityDemographicsProvider);
+    final activeEvents = ref.read(activeCityEventsProvider);
 
-    final result = economy.simulateTick(
+    final result = simulation.simulateTick(
       ledger: currentLedger,
+      clock: clock,
+      demographics: demographics,
       buildings: buildings,
       city: city,
+      activeEvents: activeEvents,
     );
 
     // Save updated ledger
     await resourcesRepo.saveLedger(result.ledger);
     state = AsyncData(result.ledger);
+
+    // Update simulation state
+    ref.read(simulationClockProvider.notifier).update(result.clock);
+    ref.read(cityDemographicsProvider.notifier).update(result.demographics);
+    ref.read(activeCityEventsProvider.notifier).update(result.activeEvents);
+
+    if (result.newEvent != null) {
+      ref.read(lastTriggeredEventProvider.notifier).trigger(result.newEvent!);
+    }
 
     // Record transactions
     if (result.transactions.isNotEmpty) {

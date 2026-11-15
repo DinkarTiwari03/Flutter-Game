@@ -6,6 +6,7 @@ import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/number_format.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/simulation_providers.dart';
 import 'package:city_builder_2040/widgets/city_logo.dart';
 import 'package:city_builder_2040/widgets/game/resource_chip.dart';
 import 'package:city_builder_2040/widgets/game/simulation_speed_control.dart';
@@ -19,6 +20,8 @@ class DesktopTopBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final city = ref.watch(activeCityProvider);
     final stats = ref.watch(cityStatsProvider);
+    final clock = ref.watch(simulationClockProvider);
+    final activeEvents = ref.watch(activeCityEventsProvider);
     if (city == null || stats == null) return const SizedBox.shrink();
 
     final textTheme = Theme.of(context).textTheme;
@@ -52,11 +55,34 @@ class DesktopTopBar extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'Level ${stats.level}  |  Day ${city.day}  |  ${city.mapWidth} x ${city.mapHeight} tiles',
+                    'Level ${stats.level}  |  ${clock.formattedFull} (${clock.phase.label})  |  ${city.mapWidth} x ${city.mapHeight} tiles',
                     style: textTheme.bodyMedium?.copyWith(
                       color: AppColors.aqua,
                     ),
                   ),
+                  if (activeEvents.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.celebration_rounded,
+                            size: 14,
+                            color: AppColors.sunrise,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${activeEvents.first.title} (${activeEvents.first.remainingHours}h left)',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppColors.sunrise,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

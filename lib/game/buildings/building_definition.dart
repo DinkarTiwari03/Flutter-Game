@@ -37,6 +37,10 @@ class BuildingResourceConfig {
     this.pollutionOutput = 0,
     this.pollutionReduction = 0,
     this.happinessBonus = 0,
+    this.jobsProvided = 0,
+    this.healthcareCapacity = 0,
+    this.educationCapacity = 0,
+    this.safetyCapacity = 0,
   });
 
   /// Maximum residents this building can house (residential).
@@ -74,6 +78,18 @@ class BuildingResourceConfig {
 
   /// Direct positive contribution to city happiness rating.
   final int happinessBonus;
+
+  /// Number of jobs provided by this facility.
+  final int jobsProvided;
+
+  /// Healthcare coverage capacity provided for citizens (hospitals).
+  final int healthcareCapacity;
+
+  /// Educational seat capacity provided for citizens (schools).
+  final int educationCapacity;
+
+  /// Public safety coverage provided for citizens (police/fire).
+  final int safetyCapacity;
 }
 
 /// Reusable definition of a constructible building type.
@@ -231,6 +247,30 @@ class BuildingDefinition {
     if (resources.happinessBonus <= 0) return 0;
     return (resources.happinessBonus * (1.0 + (level - 1) * 0.3)).round();
   }
+
+  /// Effective employment jobs provided at [level].
+  int effectiveJobsProvided(int level) {
+    if (resources.jobsProvided <= 0) return 0;
+    return (resources.jobsProvided * (1.0 + (level - 1) * 0.4)).round();
+  }
+
+  /// Effective healthcare capacity provided at [level].
+  int effectiveHealthcareCapacity(int level) {
+    if (resources.healthcareCapacity <= 0) return 0;
+    return (resources.healthcareCapacity * (1.0 + (level - 1) * 0.5)).round();
+  }
+
+  /// Effective education capacity provided at [level].
+  int effectiveEducationCapacity(int level) {
+    if (resources.educationCapacity <= 0) return 0;
+    return (resources.educationCapacity * (1.0 + (level - 1) * 0.5)).round();
+  }
+
+  /// Effective public safety capacity provided at [level].
+  int effectiveSafetyCapacity(int level) {
+    if (resources.safetyCapacity <= 0) return 0;
+    return (resources.safetyCapacity * (1.0 + (level - 1) * 0.5)).round();
+  }
 }
 
 /// Registry of all standard building definitions.
@@ -313,6 +353,7 @@ abstract final class BuildingRegistry {
       maintenanceCost: 5,
       electricityConsumption: 5,
       waterConsumption: 4,
+      jobsProvided: 12,
     ),
   );
 
@@ -332,6 +373,7 @@ abstract final class BuildingRegistry {
       maintenanceCost: 25,
       electricityConsumption: 30,
       waterConsumption: 25,
+      jobsProvided: 55,
     ),
   );
 
@@ -351,6 +393,7 @@ abstract final class BuildingRegistry {
       maintenanceCost: 50,
       electricityConsumption: 55,
       waterConsumption: 40,
+      jobsProvided: 150,
     ),
   );
 
@@ -372,6 +415,7 @@ abstract final class BuildingRegistry {
       electricityConsumption: 40,
       waterConsumption: 35,
       pollutionOutput: 25,
+      jobsProvided: 40,
     ),
   );
 
@@ -392,6 +436,7 @@ abstract final class BuildingRegistry {
       electricityConsumption: 110,
       waterConsumption: 90,
       pollutionOutput: 65,
+      jobsProvided: 120,
     ),
   );
 
@@ -412,6 +457,8 @@ abstract final class BuildingRegistry {
       electricityConsumption: 25,
       waterConsumption: 20,
       happinessBonus: 12,
+      jobsProvided: 30,
+      healthcareCapacity: 350,
     ),
   );
 
@@ -431,6 +478,8 @@ abstract final class BuildingRegistry {
       electricityConsumption: 18,
       waterConsumption: 15,
       happinessBonus: 8,
+      jobsProvided: 20,
+      educationCapacity: 250,
     ),
   );
 
@@ -450,6 +499,8 @@ abstract final class BuildingRegistry {
       electricityConsumption: 8,
       waterConsumption: 6,
       happinessBonus: 6,
+      jobsProvided: 12,
+      safetyCapacity: 300,
     ),
   );
 
@@ -469,6 +520,8 @@ abstract final class BuildingRegistry {
       electricityConsumption: 8,
       waterConsumption: 6,
       happinessBonus: 6,
+      jobsProvided: 12,
+      safetyCapacity: 300,
     ),
   );
 
@@ -505,6 +558,7 @@ abstract final class BuildingRegistry {
       maintenanceCost: 80,
       waterConsumption: 20,
       pollutionOutput: 15,
+      jobsProvided: 15,
     ),
   );
 
@@ -523,6 +577,7 @@ abstract final class BuildingRegistry {
       waterProduction: 250,
       maintenanceCost: 60,
       electricityConsumption: 25,
+      jobsProvided: 12,
     ),
   );
 
@@ -543,6 +598,7 @@ abstract final class BuildingRegistry {
       waterConsumption: 10,
       pollutionReduction: 20,
       happinessBonus: 10,
+      jobsProvided: 4,
     ),
   );
 
@@ -562,6 +618,7 @@ abstract final class BuildingRegistry {
       waterConsumption: 5,
       pollutionReduction: 10,
       happinessBonus: 6,
+      jobsProvided: 2,
     ),
   );
 
@@ -581,6 +638,7 @@ abstract final class BuildingRegistry {
       maintenanceCost: 35,
       pollutionReduction: 5,
       happinessBonus: 3,
+      jobsProvided: 6,
     ),
   );
 
@@ -601,6 +659,7 @@ abstract final class BuildingRegistry {
       electricityConsumption: 30,
       pollutionReduction: 25,
       happinessBonus: 4,
+      jobsProvided: 12,
     ),
   );
 

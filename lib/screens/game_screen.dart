@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/constants/app_routes.dart';
 import 'package:city_builder_2040/core/constants/game_constants.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
+import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/responsive.dart';
 import 'package:city_builder_2040/game/engine/map_camera.dart';
 import 'package:city_builder_2040/game/engine/map_camera_controller.dart';
 import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
+import 'package:city_builder_2040/models/city_event.dart';
 import 'package:city_builder_2040/providers/economy_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/simulation_providers.dart';
 import 'package:city_builder_2040/screens/game/desktop_game_layout.dart';
 import 'package:city_builder_2040/screens/game/game_shortcuts.dart';
 import 'package:city_builder_2040/screens/game/phone_game_layout.dart';
@@ -67,6 +70,37 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Widget build(BuildContext context) {
     // Keep simulation ticker active while GameScreen is mounted
     ref.watch(simulationTickerProvider);
+
+    ref.listen<CityEvent?>(lastTriggeredEventProvider, (prev, next) {
+      if (next != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.celebration_rounded, color: AppColors.sunrise),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Civic Event: ${next.title}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(next.description),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.navy,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
 
     final map = _map;
     final controller = _controller;
