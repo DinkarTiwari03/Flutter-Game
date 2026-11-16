@@ -82,6 +82,15 @@ class _MapViewportState extends ConsumerState<MapViewport>
   Offset _trackpadPan = Offset.zero;
   double _trackpadScale = 1;
 
+  // Double-tap detection.
+  DateTime? _lastTapTime;
+  Offset _lastTapPosition = Offset.zero;
+  static const _doubleTapTimeout = Duration(milliseconds: 300);
+  static const _doubleTapRadius = 30.0;
+
+  /// Whether the camera has been fitted to the viewport at least once.
+  bool _didInitialFit = false;
+
   MapCamera get _camera => widget.controller.camera;
 
   @override
@@ -181,6 +190,20 @@ class _MapViewportState extends ConsumerState<MapViewport>
   }
 
   void _handleTap(Offset local) {
+    // Double-tap: zoom to fit the whole map.
+    final now = DateTime.now();
+    final lastTime = _lastTapTime;
+    final lastPos = _lastTapPosition;
+    _lastTapTime = now;
+    _lastTapPosition = local;
+    if (lastTime != null &&
+        now.difference(lastTime) < _doubleTapTimeout &&
+        (local - lastPos).distance < _doubleTapRadius) {
+      _lastTapTime = null; // reset so a triple-tap doesn't re-trigger
+      widget.controller.showWholeMap();
+      return;
+    }
+
     final tile = _tileAt(local);
     final placement = ref.read(placementProvider);
     if (placement.isPlacing) {
@@ -372,6 +395,15 @@ class _MapViewportState extends ConsumerState<MapViewport>
     return LayoutBuilder(
       builder: (context, constraints) {
         _camera.setViewport(constraints.biggest, notify: false);
+
+        // On the very first layout with valid dimensions, fit the map so the
+        // playable world fills the viewport without leaving empty purple space.
+        if (!_didInitialFit &&
+            constraints.biggest.width > 0 &&
+            constraints.biggest.height > 0) {
+          _didInitialFit = true;
+          _camera.jumpToFit();
+        }
 
         final layers = Stack(
           fit: StackFit.expand,

@@ -59,4 +59,80 @@ class GameMap {
     }
     return count;
   }
+
+  /// Creates a larger map by copying all tiles of this map into the top-left
+  /// corner of a new grid of [newCols] × [newRows].
+  ///
+  /// Tiles outside the original bounds are filled with [fillType] /
+  /// [fillDecoration] (defaults to water, so the expansion looks like open
+  /// ocean until the terrain generator fills it).
+  ///
+  /// Call [MapGenerator.generate] with the same [seed] on the larger
+  /// [MapConfig] to get a fully-generated expanded map, then merge via
+  /// [mergeExpanded] to overwrite only the new tiles while preserving
+  /// existing ones.
+  GameMap expanded({
+    required int newCols,
+    required int newRows,
+    TileType fillType = TileType.water,
+    TileDecoration fillDecoration = TileDecoration.none,
+  }) {
+    assert(newCols >= cols && newRows >= rows,
+        'expanded() cannot shrink the map');
+    final newTypes = Uint8List(newCols * newRows)
+      ..fillRange(0, newCols * newRows, fillType.index);
+    final newDecorations = Uint8List(newCols * newRows)
+      ..fillRange(0, newCols * newRows, fillDecoration.index);
+
+    // Copy existing rows into the new, wider grid.
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final dst = r * newCols + c;
+        newTypes[dst] = _types[_index(c, r)];
+        newDecorations[dst] = _decorations[_index(c, r)];
+      }
+    }
+
+    return GameMap(
+      cols: newCols,
+      rows: newRows,
+      types: newTypes,
+      decorations: newDecorations,
+      seed: seed,
+    );
+  }
+
+  /// Merges tile data from [generated] (a larger map produced by
+  /// [MapGenerator.generate]) into this map, but only for tiles outside the
+  /// original [originalCols] × [originalRows] region.
+  ///
+  /// The result preserves everything the player has built while adding
+  /// deterministically-generated terrain in the new area.
+  GameMap mergeExpanded(GameMap generated, {
+    required int originalCols,
+    required int originalRows,
+  }) {
+    assert(generated.cols == cols && generated.rows == rows);
+    final mergedTypes = Uint8List.fromList(_types);
+    final mergedDecorations = Uint8List.fromList(_decorations);
+
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        // Keep original tiles; fill only new area from generated map.
+        if (c < originalCols && r < originalRows) continue;
+        final src = r * generated.cols + c;
+        final dst = _index(c, r);
+        mergedTypes[dst] = generated._types[src];
+        mergedDecorations[dst] = generated._decorations[src];
+      }
+    }
+
+    return GameMap(
+      cols: cols,
+      rows: rows,
+      types: mergedTypes,
+      decorations: mergedDecorations,
+      seed: seed,
+    );
+  }
 }

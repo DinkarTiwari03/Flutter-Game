@@ -19,6 +19,7 @@ import 'package:city_builder_2040/providers/simulation_providers.dart';
 import 'package:city_builder_2040/screens/game/desktop_game_layout.dart';
 import 'package:city_builder_2040/screens/game/game_shortcuts.dart';
 import 'package:city_builder_2040/screens/game/phone_game_layout.dart';
+import 'package:city_builder_2040/services/world_expansion_service.dart';
 import 'package:city_builder_2040/widgets/app_error_view.dart';
 import 'package:city_builder_2040/widgets/game_button.dart';
 import 'package:city_builder_2040/widgets/tutorial/tutorial_overlay.dart';
@@ -53,12 +54,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // The map belongs to the city that was open when the screen was created.
-    final map = ref.read(gameMapProvider);
+    final map = ref.read(expandableGameMapProvider);
     if (map == null) return;
     _map = map;
     _camera = MapCamera(
       worldBounds: IsoProjection.mapBounds(map.cols, map.rows),
+      // Start with initialZoom; MapViewport will call jumpToFit() on the first
+      // layout pass so the whole map fills the screen automatically.
       zoom: GameConstants.initialZoom,
+      adaptiveMinZoom: true,
     );
     _controller = MapCameraController(vsync: this, camera: _camera!);
   }
@@ -85,6 +89,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Widget build(BuildContext context) {
     // Keep simulation ticker active while GameScreen is mounted
     ref.watch(simulationTickerProvider);
+
+    // React to world expansion: update camera bounds and renderer map.
+    ref.listen<GameMap?>(expandableGameMapProvider, (prev, next) {
+      if (next != null && prev != null &&
+          (next.cols != prev.cols || next.rows != prev.rows)) {
+        setState(() {
+          _map = next;
+        });
+        _camera?.setWorldBounds(IsoProjection.mapBounds(next.cols, next.rows));
+        // Animate to show the full expanded world.
+        _controller?.showWholeMap();
+      }
+    });
 
     ref.listen<CityEvent?>(lastTriggeredEventProvider, (prev, next) {
       if (next != null) {

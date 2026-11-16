@@ -99,6 +99,15 @@ class MapCameraController {
     );
   }
 
+  /// Zooms the camera to completely fill the viewport with terrain (no border margins).
+  void fillViewport() {
+    _animate(
+      focus: camera.worldBounds.center,
+      zoom: camera.fillZoom,
+      duration: const Duration(milliseconds: 420),
+    );
+  }
+
   /// Continues a drag with inertia. [velocity] is in screen pixels/second.
   void fling(Offset velocity) {
     final speed = velocity.distance;
@@ -128,7 +137,7 @@ class MapCameraController {
     _fromZoom = camera.zoom;
     _toFocus = focus ?? _targetFocus;
     _toZoom =
-        (zoom ?? targetZoom).clamp(camera.minZoom, camera.maxZoom).toDouble();
+        (zoom ?? targetZoom).clamp(camera.effectiveMinZoom, camera.maxZoom).toDouble();
     _anchorScreen = anchorScreen;
     _anchorWorld =
         anchorScreen == null ? null : camera.screenToWorld(anchorScreen);

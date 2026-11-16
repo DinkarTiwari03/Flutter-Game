@@ -18,11 +18,11 @@ abstract final class GameConstants {
 
   // Camera.
   static const minZoom = 0.3;
-  static const maxZoom = 2.5;
+  static const maxZoom = 3.0;
   static const initialZoom = 1.0;
   static const zoomStep = 1.25;
   static const keyboardPanStep = 140.0;
-  static const boundaryMargin = 192.0;
+  static const boundaryMargin = 64.0;
 
   // Input.
   static const touchTapSlop = 10.0;

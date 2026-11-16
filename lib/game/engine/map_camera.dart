@@ -23,6 +23,7 @@ class MapCamera extends ChangeNotifier {
     this.boundaryMargin = GameConstants.boundaryMargin,
     double zoom = GameConstants.initialZoom,
     Offset? focus,
+    this.adaptiveMinZoom = false,
   }) : _worldBounds = worldBounds,
        _zoom = zoom.clamp(minZoom, maxZoom).toDouble(),
        _focus = focus ?? worldBounds.center {
@@ -32,9 +33,25 @@ class MapCamera extends ChangeNotifier {
   final double minZoom;
   final double maxZoom;
 
+  /// When true, [effectiveMinZoom] adapts to the viewport so the map fills the
+  /// available game screen instead of shrinking to a tiny island with empty space.
+  final bool adaptiveMinZoom;
+
   /// Extra world space allowed around the map edges, so the map can be
   /// scrolled slightly past its borders.
   final double boundaryMargin;
+
+  /// Effective lower zoom limit. When [adaptiveMinZoom] is enabled, it computes
+  /// the exact zoom to frame the world in the viewport without leaving empty
+  /// margins.
+  double get effectiveMinZoom {
+    if (!adaptiveMinZoom || _viewport.isEmpty) return minZoom;
+    final fit = math.min(
+      _viewport.width / _worldBounds.width,
+      _viewport.height / _worldBounds.height,
+    );
+    return fit.clamp(0.05, maxZoom).toDouble();
+  }
 
   Rect _worldBounds;
   Size _viewport = Size.zero;
@@ -67,15 +84,28 @@ class MapCamera extends ChangeNotifier {
   Offset worldToScreen(Offset world) =>
       (world - _focus) * _zoom + viewportCenter;
 
-  /// Updates the viewport size (call on layout). Keeps the focus valid.
+  /// Updates the viewport size (call on layout). Keeps the focus valid and
+  /// ensures the zoom never goes below [effectiveMinZoom] (which adapts to
+  /// the viewport so the map always fills the screen).
   ///
   /// Pass `notify: false` when calling during a build; the resized render
   /// objects repaint on their own.
   void setViewport(Size size, {bool notify = true}) {
     if (size == _viewport) return;
     _viewport = size;
+    // After the viewport changes the effective min-zoom changes too;
+    // clamp the current zoom so the map keeps filling the screen.
+    _zoom = _zoom.clamp(effectiveMinZoom, maxZoom).toDouble();
     _clampFocus();
     if (notify) notifyListeners();
+  }
+
+  /// Zooms to [fitZoom] so the whole map is visible (animatable via the
+  /// controller's [showWholeMap]; this instant version is used on startup).
+  void jumpToFit() {
+    _zoom = fitZoom;
+    _focus = clampFocus(_worldBounds.center, _zoom);
+    notifyListeners();
   }
 
   void setWorldBounds(Rect bounds) {
@@ -108,7 +138,7 @@ class MapCamera extends ChangeNotifier {
     required Offset screenPoint,
     required double zoom,
   }) {
-    final newZoom = zoom.clamp(minZoom, maxZoom).toDouble();
+    final newZoom = zoom.clamp(effectiveMinZoom, maxZoom).toDouble();
     final newFocus = worldPoint - (screenPoint - viewportCenter) / newZoom;
     _setView(focus: newFocus, zoom: newZoom);
   }
@@ -143,7 +173,7 @@ class MapCamera extends ChangeNotifier {
   void _clampFocus() => _focus = clampFocus(_focus, _zoom);
 
   void _setView({required Offset focus, required double zoom}) {
-    final clampedZoom = zoom.clamp(minZoom, maxZoom).toDouble();
+    final clampedZoom = zoom.clamp(effectiveMinZoom, maxZoom).toDouble();
     final clampedFocus = clampFocus(focus, clampedZoom);
     if (clampedZoom == _zoom && clampedFocus == _focus) return;
     _zoom = clampedZoom;
@@ -158,6 +188,16 @@ class MapCamera extends ChangeNotifier {
       _viewport.width / _worldBounds.width,
       _viewport.height / _worldBounds.height,
     );
-    return fit.clamp(minZoom, maxZoom).toDouble();
+    return fit.clamp(effectiveMinZoom, maxZoom).toDouble();
+  }
+
+  /// Zoom at which the map completely fills the viewport in both directions.
+  double get fillZoom {
+    if (_viewport.isEmpty) return _zoom;
+    final fill = math.max(
+      _viewport.width / _worldBounds.width,
+      _viewport.height / _worldBounds.height,
+    );
+    return fill.clamp(effectiveMinZoom, maxZoom).toDouble();
   }
 }
