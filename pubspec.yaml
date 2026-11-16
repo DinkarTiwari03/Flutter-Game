@@ -67,6 +67,14 @@ flutter:
   assets:
     - assets/images/
     - assets/buildings/
+    - assets/buildings/residential/
+    - assets/buildings/commercial/
+    - assets/buildings/industrial/
+    - assets/buildings/public_services/
+    - assets/buildings/infrastructure/
+    - assets/buildings/environment/
+    - assets/vehicles/
+    - assets/pedestrians/
     - assets/icons/
     - assets/sounds/
 

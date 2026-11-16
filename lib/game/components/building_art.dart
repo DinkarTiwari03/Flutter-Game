@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
@@ -67,6 +68,9 @@ abstract final class BuildingArt {
   }
 
   /// Paints a placed building in world space.
+  ///
+  /// When [sprite] is non-null the building is rendered as a PNG sprite,
+  /// otherwise the procedural 2.5D box renderer is used as a fallback.
   static void paintBuilding({
     required Canvas canvas,
     required BuildingDefinition definition,
@@ -74,12 +78,27 @@ abstract final class BuildingArt {
     int level = 1,
     bool isGhost = false,
     bool isValid = true,
+    ui.Image? sprite,
   }) {
     if (definition.isRoad) {
       _paintRoad(canvas, origin, isGhost, isValid);
       return;
     }
 
+    // ── Sprite path ─────────────────────────────────────────────────────────
+    if (sprite != null) {
+      _paintSprite(canvas, sprite, definition, origin, level, isGhost, isValid);
+      // Level indicator on top of the sprite for placed buildings
+      if (!isGhost && level > 1) {
+        final c = footprintCorners(origin, definition.width, definition.height);
+        final h = heightFor(definition, level);
+        final bottomRoof = Offset(c.bottom.dx, c.bottom.dy - h);
+        _paintLevelIndicator(canvas, bottomRoof, level);
+      }
+      return;
+    }
+
+    // ── Procedural fallback ──────────────────────────────────────────────────
     final h = heightFor(definition, level);
     final c = footprintCorners(origin, definition.width, definition.height);
 
@@ -178,6 +197,61 @@ abstract final class BuildingArt {
       if (level > 1) {
         _paintLevelIndicator(canvas, bottomRoof, level);
       }
+    }
+  }
+
+  // ── Sprite renderer ────────────────────────────────────────────────────────
+
+  static void _paintSprite(
+    Canvas canvas,
+    ui.Image sprite,
+    BuildingDefinition definition,
+    GridPoint origin,
+    int level,
+    bool isGhost,
+    bool isValid,
+  ) {
+    final c = footprintCorners(origin, definition.width, definition.height);
+
+    // Footprint width in world pixels (left↔right diagonal).
+    final footprintWidth = (c.right.dx - c.left.dx).abs();
+
+    // Scale so the sprite covers the footprint width.
+    final srcW = sprite.width.toDouble();
+    final srcH = sprite.height.toDouble();
+    final scale = footprintWidth / srcW;
+    final dstH = srcH * scale;
+
+    // Anchor: bottom of sprite aligns with the bottom-most footprint corner.
+    final dstLeft = c.bottom.dx - footprintWidth / 2;
+    final dstTop = c.bottom.dy - dstH;
+
+    final dst = Rect.fromLTWH(dstLeft, dstTop, footprintWidth, dstH);
+    final src = Rect.fromLTWH(0, 0, srcW, srcH);
+
+    final paint = Paint()..isAntiAlias = true;
+
+    if (isGhost) {
+      final tintColor = isValid
+          ? AppColors.teal.withAlpha(110)
+          : AppColors.coral.withAlpha(110);
+      paint
+        ..colorFilter = ColorFilter.mode(tintColor, BlendMode.srcATop)
+        ..color = const Color(0xAAFFFFFF); // ~67 % opacity
+    }
+
+    canvas.drawImageRect(sprite, src, dst, paint);
+
+    // Ghost validity outline drawn on the footprint diamond.
+    if (isGhost) {
+      final outlineColor = isValid ? AppColors.aqua : AppColors.coral;
+      canvas.drawPath(
+        footprintPath(origin, definition.width, definition.height),
+        Paint()
+          ..color = outlineColor.withAlpha(200)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0,
+      );
     }
   }
 

@@ -100,6 +100,8 @@ Shared contract (documented on `CityRepository`):
 | 06 Missions, challenges and progression system | Complete (Missions across 4 categories, milestone challenges, player XP & level progression, building unlock gating, achievements, duplicate reward prevention, UI panels, tests, docs) |
 | 07 Persistence, polish and platform optimization | Complete (Local SQLite database via Drift, concrete local repositories, autosave on lifecycle and simulation loop, app restart recovery, first-time player tutorial, settings persistence, tests, docs) |
 | 08 Final testing, exhibition mode and release | Complete (Exhibition demo mode with isolated demo city, 204/204 automated tests, Android release APK verified, Windows toolchain documented, final release report) |
+| Visual Upgrade: Real Isometric Buildings | Complete (54 Kenney CC0 building sprites across all 6 categories, multi-tile footprint anchoring, ghost preview, procedural fallback) |
+| Urban Life Simulation | Complete (Pedestrian walking with stride animations, 19 vehicle types, right-hand lane physics, road graph pathfinding, day/night headlights, tests, docs) |
 
 ## Handoffs
 - [Phase 01](HANDOFFS/PHASE_01.md)
@@ -111,3 +113,5 @@ Shared contract (documented on `CityRepository`):
 - [Phase 07](HANDOFFS/PHASE_07.md)
 - [Phase 08](HANDOFFS/PHASE_08.md)
 - [Final Release Report](FINAL_RELEASE_REPORT.md)
+- [Visual Building Assets](HANDOFFS/VISUAL_BUILDING_ASSETS.md)
+- [Urban Life Simulation](HANDOFFS/URBAN_LIFE_SIMULATION.md)

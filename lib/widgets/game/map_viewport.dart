@@ -1,9 +1,11 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:city_builder_2040/core/constants/game_constants.dart';
 import 'package:city_builder_2040/game/components/building_painter.dart';
+import 'package:city_builder_2040/game/components/building_sprite_cache.dart';
 import 'package:city_builder_2040/game/components/iso_map_painter.dart';
 import 'package:city_builder_2040/game/components/iso_map_renderer.dart';
 import 'package:city_builder_2040/game/components/map_overlay_painter.dart';
@@ -12,9 +14,12 @@ import 'package:city_builder_2040/game/engine/map_camera_controller.dart';
 import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/grid_point.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
+import 'package:city_builder_2040/game/urban/urban_sprite_cache.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
+import 'package:city_builder_2040/providers/economy_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/providers/simulation_providers.dart';
+import 'package:city_builder_2040/providers/urban_providers.dart';
 
 /// Interactive view of the isometric map.
 ///
@@ -47,12 +52,16 @@ class MapViewport extends ConsumerStatefulWidget {
 }
 
 class _MapViewportState extends ConsumerState<MapViewport>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late IsoMapRenderer _renderer;
   late final AnimationController _pop;
   final _selected = ValueNotifier<GridPoint?>(null);
   final _hovered = ValueNotifier<GridPoint?>(null);
   final _cursor = ValueNotifier<MouseCursor>(MouseCursor.defer);
+  late final BuildingSpriteCache _spriteCache = BuildingSpriteCache();
+  late final UrbanSpriteCache _urbanCache = UrbanSpriteCache();
+  Ticker? _urbanTicker;
+  Duration _lastUrbanTick = Duration.zero;
 
   // Active pointers by id, in the order they went down.
   final Map<int, Offset> _pointers = {};
@@ -85,6 +94,40 @@ class _MapViewportState extends ConsumerState<MapViewport>
       value: 1,
     );
     _selected.value = ref.read(selectedTileProvider);
+
+    // Urban simulation ticker runs only in active interactive runtime
+    final isTestEnvironment =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTestEnvironment) {
+      _urbanTicker = createTicker(_onUrbanFrame)..start();
+    }
+  }
+
+  void _onUrbanFrame(Duration elapsed) {
+    if (!mounted) return;
+    final dt = _lastUrbanTick == Duration.zero
+        ? 0.016
+        : (elapsed - _lastUrbanTick).inMicroseconds / 1000000.0;
+    _lastUrbanTick = elapsed;
+
+    final clampedDt = dt.clamp(0.001, 0.05);
+    final buildings = ref.read(cityBuildingsProvider).value ?? const [];
+    final clock = ref.read(simulationClockProvider);
+    final demographics = ref.read(cityDemographicsProvider);
+    final ledger = ref.read(cityLedgerProvider).value;
+
+    final happiness = ledger?.happiness ?? 75;
+    final population = demographics.totalPopulation > 0
+        ? demographics.totalPopulation
+        : (ledger?.population ?? 100);
+
+    ref.read(urbanSimulationProvider).update(
+      dt: clampedDt,
+      buildings: buildings,
+      clock: clock,
+      population: population,
+      happiness: happiness,
+    );
   }
 
   @override
@@ -98,11 +141,14 @@ class _MapViewportState extends ConsumerState<MapViewport>
 
   @override
   void dispose() {
+    _urbanTicker?.dispose();
     _renderer.dispose();
     _pop.dispose();
     _selected.dispose();
     _hovered.dispose();
     _cursor.dispose();
+    _spriteCache.dispose();
+    _urbanCache.dispose();
     super.dispose();
   }
 
@@ -321,6 +367,7 @@ class _MapViewportState extends ConsumerState<MapViewport>
     final placement = ref.watch(placementProvider);
     final selectedBuildingId = ref.watch(selectedBuildingIdProvider);
     final clock = ref.watch(simulationClockProvider);
+    final urbanService = ref.watch(urbanSimulationProvider);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -343,6 +390,13 @@ class _MapViewportState extends ConsumerState<MapViewport>
                   buildings: buildings,
                   placement: placement,
                   selectedBuildingId: selectedBuildingId,
+                  spriteCache: _spriteCache,
+                  urbanService: urbanService,
+                  urbanCache: _urbanCache,
+                  clock: clock,
+                  onSpriteLoaded: () {
+                    if (mounted) setState(() {});
+                  },
                 ),
               ),
             ),

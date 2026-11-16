@@ -3,26 +3,44 @@ import 'package:flutter/material.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/map_colors.dart';
 import 'package:city_builder_2040/game/buildings/building_definition.dart';
+import 'package:city_builder_2040/game/buildings/building_sprite_registry.dart';
 import 'package:city_builder_2040/game/components/building_art.dart';
+import 'package:city_builder_2040/game/components/building_sprite_cache.dart';
 import 'package:city_builder_2040/game/components/iso_map_painter.dart';
 import 'package:city_builder_2040/game/engine/map_camera.dart';
 import 'package:city_builder_2040/game/map/grid_point.dart';
+import 'package:city_builder_2040/game/urban/pedestrian.dart';
+import 'package:city_builder_2040/game/urban/urban_art.dart';
+import 'package:city_builder_2040/game/urban/urban_simulation_service.dart';
+import 'package:city_builder_2040/game/urban/urban_sprite_cache.dart';
+import 'package:city_builder_2040/game/urban/vehicle.dart';
 import 'package:city_builder_2040/models/building.dart';
+import 'package:city_builder_2040/models/simulation_clock.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
 
-/// Paints placed 2.5D isometric buildings and placement ghost previews.
+/// Paints placed 2.5D isometric buildings, urban traffic & citizens, and placement previews.
 class BuildingPainter extends CustomPainter {
   BuildingPainter({
     required this.camera,
     required this.buildings,
     required this.placement,
     required this.selectedBuildingId,
-  }) : super(repaint: camera);
+    required this.spriteCache,
+    required this.onSpriteLoaded,
+    this.urbanService,
+    this.urbanCache,
+    this.clock,
+  }) : super(repaint: urbanService != null ? Listenable.merge([camera, urbanService]) : camera);
 
   final MapCamera camera;
   final List<Building> buildings;
   final PlacementState placement;
   final String? selectedBuildingId;
+  final BuildingSpriteCache spriteCache;
+  final VoidCallback onSpriteLoaded;
+  final UrbanSimulationService? urbanService;
+  final UrbanSpriteCache? urbanCache;
+  final SimulationClock? clock;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -30,32 +48,72 @@ class BuildingPainter extends CustomPainter {
     canvas.applyCamera(camera);
 
     final pixel = 1 / camera.zoom;
+    final isNight = clock != null &&
+        (clock!.phase == DayPhase.night || clock!.phase == DayPhase.dusk);
 
-    // 1. Sort placed buildings by isometric depth: (row + col)
-    final sortedBuildings = List<Building>.from(buildings)
-      ..sort((a, b) {
-        final depthA = a.y + a.x;
-        final depthB = b.y + b.x;
-        return depthA.compareTo(depthB);
-      });
+    // 1. Merge buildings, vehicles, and pedestrians for unified isometric depth sorting
+    final renderItems = <_DepthItem>[];
 
-    // 2. Draw placed buildings
-    for (final b in sortedBuildings) {
-      final def = BuildingRegistry.get(b.typeId);
-      if (def == null) continue;
-      final origin = GridPoint(b.x, b.y);
+    for (final b in buildings) {
+      renderItems.add(_DepthItem(depth: (b.y + b.x).toDouble(), building: b));
+    }
 
-      // Selected building highlight foundation
-      if (b.id == selectedBuildingId) {
-        _paintSelectionGlow(canvas, origin, def, pixel);
+    if (urbanService != null && urbanCache != null) {
+      for (final v in urbanService!.vehicles) {
+        if (!v.isDespawned) {
+          renderItems.add(_DepthItem(depth: v.depth, vehicle: v));
+        }
       }
+      for (final p in urbanService!.pedestrians) {
+        if (!p.isDespawned) {
+          renderItems.add(_DepthItem(depth: p.depth, pedestrian: p));
+        }
+      }
+    }
 
-      BuildingArt.paintBuilding(
-        canvas: canvas,
-        definition: def,
-        origin: origin,
-        level: b.level,
-      );
+    renderItems.sort((a, b) => a.depth.compareTo(b.depth));
+
+    // 2. Render sorted buildings, vehicles, and citizens
+    for (final item in renderItems) {
+      if (item.building != null) {
+        final b = item.building!;
+        final def = BuildingRegistry.get(b.typeId);
+        if (def == null) continue;
+        final origin = GridPoint(b.x, b.y);
+
+        // Selected building highlight foundation
+        if (b.id == selectedBuildingId) {
+          _paintSelectionGlow(canvas, origin, def, pixel);
+        }
+
+        final assetPath = BuildingSpriteRegistry.assetFor(b.typeId, b.level);
+        if (assetPath != null) {
+          spriteCache.warmUp(assetPath, onLoaded: onSpriteLoaded);
+        }
+
+        BuildingArt.paintBuilding(
+          canvas: canvas,
+          definition: def,
+          origin: origin,
+          level: b.level,
+          sprite: assetPath != null ? spriteCache.get(assetPath) : null,
+        );
+      } else if (item.vehicle != null && urbanCache != null) {
+        UrbanArt.paintVehicle(
+          canvas: canvas,
+          vehicle: item.vehicle!,
+          cache: urbanCache!,
+          isNight: isNight,
+          onSpriteLoaded: onSpriteLoaded,
+        );
+      } else if (item.pedestrian != null && urbanCache != null) {
+        UrbanArt.paintPedestrian(
+          canvas: canvas,
+          pedestrian: item.pedestrian!,
+          cache: urbanCache!,
+          onSpriteLoaded: onSpriteLoaded,
+        );
+      }
     }
 
     // 3. Draw placement preview if in placement mode
@@ -66,6 +124,11 @@ class BuildingPainter extends CustomPainter {
 
       _paintPlacementFootprint(canvas, origin, def, isValid, pixel);
 
+      final assetPath = BuildingSpriteRegistry.assetFor(def.id, 1);
+      if (assetPath != null) {
+        spriteCache.warmUp(assetPath, onLoaded: onSpriteLoaded);
+      }
+
       BuildingArt.paintBuilding(
         canvas: canvas,
         definition: def,
@@ -73,6 +136,7 @@ class BuildingPainter extends CustomPainter {
         level: 1,
         isGhost: true,
         isValid: isValid,
+        sprite: assetPath != null ? spriteCache.get(assetPath) : null,
       );
     }
 
@@ -136,5 +200,22 @@ class BuildingPainter extends CustomPainter {
       oldDelegate.camera != camera ||
       !listEquals(oldDelegate.buildings, buildings) ||
       oldDelegate.placement != placement ||
-      oldDelegate.selectedBuildingId != selectedBuildingId;
+      oldDelegate.selectedBuildingId != selectedBuildingId ||
+      oldDelegate.spriteCache != spriteCache ||
+      oldDelegate.urbanService != urbanService ||
+      oldDelegate.clock != clock;
+}
+
+class _DepthItem {
+  _DepthItem({
+    required this.depth,
+    this.building,
+    this.vehicle,
+    this.pedestrian,
+  });
+
+  final double depth;
+  final Building? building;
+  final Vehicle? vehicle;
+  final Pedestrian? pedestrian;
 }
