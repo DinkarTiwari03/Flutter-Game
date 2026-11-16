@@ -1,12 +1,15 @@
 import 'dart:collection';
 import 'dart:math' as math;
+import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/grid_point.dart';
+import 'package:city_builder_2040/game/map/tile_type.dart';
 import 'package:city_builder_2040/game/urban/compass_direction.dart';
 import 'package:city_builder_2040/models/building.dart';
 
 /// Graph representation of the city's road network.
 ///
-/// In City Builder 2040, roads are 1x1 placed structures with `typeId == 'road'`.
+/// In City Builder 2040, roads exist both as procedural grid terrain on the map
+/// and as 1x1 placed structures (`typeId == 'road'`).
 /// This graph enables vehicle pathfinding, intersection detection, and
 /// turn resolution.
 class RoadGraph {
@@ -30,10 +33,20 @@ class RoadGraph {
   /// Adjacent road tiles connected to [tile].
   List<GridPoint> neighborsOf(GridPoint tile) => _adjacency[tile] ?? const [];
 
-  /// Rebuilds the road graph from the current list of city buildings.
-  void updateFromBuildings(List<Building> buildings) {
+  /// Rebuilds the road graph from the current list of city buildings and [map].
+  void updateFromBuildings(List<Building> buildings, {GameMap? map}) {
     _roadTiles.clear();
     _adjacency.clear();
+
+    if (map != null) {
+      for (var r = 0; r < map.rows; r++) {
+        for (var c = 0; c < map.cols; c++) {
+          if (map.typeAt(c, r) == TileType.road) {
+            _roadTiles.add(GridPoint(c, r));
+          }
+        }
+      }
+    }
 
     for (final b in buildings) {
       if (b.typeId == 'road') {

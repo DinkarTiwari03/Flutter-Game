@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/constants/app_constants.dart';
@@ -64,44 +66,102 @@ class GameNavigation extends ConsumerWidget {
     ];
 
     return switch (style) {
-      GameNavStyle.bottomBar => DecoratedBox(
-        decoration: const BoxDecoration(
-          color: AppColors.navy,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg),
-          ),
+      GameNavStyle.bottomBar => ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.lg),
         ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs,
-              vertical: AppSpacing.xs,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Color(0xF5061A3A),
+                  Color(0xD9061A3A),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.lg),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x40000000),
+                  blurRadius: 16,
+                  offset: Offset(0, -4),
+                ),
+              ],
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.aqua.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
             ),
-            child: Row(
-              children: [for (final item in items) Expanded(child: item)],
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  children: [for (final item in items) Expanded(child: item)],
+                ),
+              ),
             ),
           ),
         ),
       ),
-      GameNavStyle.rail => DecoratedBox(
-        decoration: const BoxDecoration(color: AppColors.navy),
-        child: SafeArea(
-          right: false,
-          child: SizedBox(
-            width: 88,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs,
-                vertical: AppSpacing.sm,
-              ),
-              child: Column(
-                children: [
-                  for (final item in items) ...[
-                    item,
-                    const SizedBox(height: AppSpacing.xs),
-                  ],
+      GameNavStyle.rail => ClipRRect(
+        borderRadius: const BorderRadius.horizontal(
+          right: Radius.circular(AppRadius.md),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xF5061A3A),
+                  Color(0xD9061A3A),
                 ],
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x40000000),
+                  blurRadius: 12,
+                  offset: Offset(4, 0),
+                ),
+              ],
+              border: Border(
+                right: BorderSide(
+                  color: AppColors.aqua.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: SafeArea(
+              right: false,
+              child: SizedBox(
+                width: 88,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: Column(
+                    children: [
+                      for (final item in items) ...[
+                        item,
+                        const SizedBox(height: AppSpacing.xs),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

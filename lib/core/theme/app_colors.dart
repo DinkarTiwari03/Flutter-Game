@@ -34,6 +34,15 @@ abstract final class AppColors {
     end: Alignment.bottomCenter,
     colors: [navy, deepBlue, Color(0xFF0E5E7A)],
   );
+  static const hudOverlayGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xF2061A3A),
+      Color(0xD90B2A5B),
+      Color(0xCC0E5E7A),
+    ],
+  );
   static const tealGradient = LinearGradient(colors: [teal, aqua]);
   static const titleGradient = LinearGradient(
     begin: Alignment.topCenter,

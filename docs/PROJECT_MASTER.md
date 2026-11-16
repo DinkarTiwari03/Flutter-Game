@@ -103,6 +103,7 @@ Shared contract (documented on `CityRepository`):
 | Visual Upgrade: Real Isometric Buildings | Complete (54 Kenney CC0 building sprites across all 6 categories, multi-tile footprint anchoring, ghost preview, procedural fallback) |
 | Urban Life Simulation | Complete (Pedestrian walking with stride animations, 19 vehicle types, right-hand lane physics, road graph pathfinding, day/night headlights, tests, docs) |
 | Full-Viewport Isometric World & Expansion | Complete (Minecraft-style full-viewport camera, adaptive min zoom eliminating purple margins, double-tap fit, pinch/wheel/pan, expandable deterministic world system, tests, docs) |
+| Immersive Top HUD Overlay | Complete (Clash of Clans style floating HUD, full-screen map background layer, frosted glassmorphic backdrop, non-overlapping z-ordering, tests, docs) |
 
 ## Handoffs
 - [Phase 01](HANDOFFS/PHASE_01.md)
@@ -117,3 +118,4 @@ Shared contract (documented on `CityRepository`):
 - [Visual Building Assets](HANDOFFS/VISUAL_BUILDING_ASSETS.md)
 - [Urban Life Simulation](HANDOFFS/URBAN_LIFE_SIMULATION.md)
 - [Full-Viewport Camera & World Expansion](HANDOFFS/CAMERA_WORLD_EXPANSION.md)
+- [Immersive Top HUD Overlay](HANDOFFS/IMMERSIVE_HUD_OVERLAY.md)

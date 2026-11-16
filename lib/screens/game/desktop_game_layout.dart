@@ -42,19 +42,26 @@ class DesktopGameLayout extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.navy,
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          const DesktopTopBar(),
-          Expanded(
+          // ── Layer 1, 2 & side components: Map with side panels ──
+          Positioned.fill(
             child: Row(
               children: [
-                const GameNavigation(
-                  style: GameNavStyle.rail,
-                  alwaysOpen: true,
+                const Padding(
+                  padding: EdgeInsets.only(top: 84.0),
+                  child: GameNavigation(
+                    style: GameNavStyle.rail,
+                    alwaysOpen: true,
+                  ),
                 ),
                 SizedBox(
                   width: panelWidth,
-                  child: SectionSidePanel(section: section),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 84.0),
+                    child: SectionSidePanel(section: section),
+                  ),
                 ),
                 Expanded(
                   child: Stack(
@@ -88,9 +95,23 @@ class DesktopGameLayout extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: panelWidth, child: _InspectorPanel()),
+                const SizedBox(
+                  width: panelWidth,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 84.0),
+                    child: _InspectorPanel(),
+                  ),
+                ),
               ],
             ),
+          ),
+
+          // ── Layer 4: Floating Top HUD overlay ──
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: DesktopTopBar(),
           ),
         ],
       ),

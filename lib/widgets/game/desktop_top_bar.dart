@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/constants/app_routes.dart';
@@ -28,9 +30,30 @@ class DesktopTopBar extends ConsumerWidget {
     final happiness = happinessStyle(stats.happiness);
     final pollution = pollutionStyle(stats.pollution);
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.skyGradient),
-      child: Padding(
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(AppRadius.lg),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppColors.hudOverlayGradient,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.aqua.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
@@ -165,6 +188,7 @@ class DesktopTopBar extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

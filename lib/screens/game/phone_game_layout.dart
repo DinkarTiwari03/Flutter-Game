@@ -39,55 +39,71 @@ class PhoneGameLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mapArea = _MapArea(
-      map: map,
-      controller: controller,
-      focusNode: focusNode,
-      viewportKey: viewportKey,
-      landscape: landscape,
-    );
-
     return Scaffold(
       backgroundColor: AppColors.navy,
-      body:
-          landscape
-              ? Row(
-                children: [
-                  const GameNavigation(style: GameNavStyle.rail),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const CompactTopBar(singleRow: true),
-                        Expanded(child: mapArea),
-                      ],
-                    ),
-                  ),
-                ],
-              )
-              : Column(
-                children: [
-                  const CompactTopBar(),
-                  Expanded(child: mapArea),
-                  const GameNavigation(style: GameNavStyle.bottomBar),
-                ],
-              ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Layer 1 & 2: Full-screen isometric world and terrain ──
+          Positioned.fill(
+            child: MapViewport(
+              key: viewportKey,
+              map: map,
+              controller: controller,
+              focusNode: focusNode,
+            ),
+          ),
+
+          // ── Layer 3: Camera controls (zoom, reset camera, grid toggle) ──
+          Positioned(
+            top: landscape ? 70.0 : 135.0,
+            right: AppSpacing.md,
+            child: SafeArea(
+              top: landscape,
+              bottom: false,
+              left: false,
+              right: false,
+              child: MapControls(controller: controller),
+            ),
+          ),
+
+          // ── Contextual floating panels (Placement HUD, Inspector, Section Sheet, Tile Info) ──
+          Positioned.fill(
+            child: _FloatingPanels(landscape: landscape),
+          ),
+
+          // ── Layer 4: Top HUD overlay (Clash of Clans style) ──
+          Positioned(
+            top: 0,
+            left: landscape ? 88.0 : 0,
+            right: 0,
+            child: CompactTopBar(singleRow: landscape),
+          ),
+
+          // ── Layer 5: Bottom / Rail Navigation overlay ──
+          if (landscape)
+            const Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              child: GameNavigation(style: GameNavStyle.rail),
+            )
+          else
+            const Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: GameNavigation(style: GameNavStyle.bottomBar),
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _MapArea extends ConsumerWidget {
-  const _MapArea({
-    required this.map,
-    required this.controller,
-    required this.focusNode,
-    required this.viewportKey,
-    required this.landscape,
-  });
+class _FloatingPanels extends ConsumerWidget {
+  const _FloatingPanels({required this.landscape});
 
-  final GameMap map;
-  final MapCameraController controller;
-  final FocusNode focusNode;
-  final GlobalKey viewportKey;
   final bool landscape;
 
   @override
@@ -99,6 +115,16 @@ class _MapArea extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Vertical and horizontal clearance ensuring panels sit comfortably
+        // between the floating top HUD and bottom navigation.
+        final topClearance = landscape ? 65.0 : 130.0;
+        final bottomClearance = landscape ? AppSpacing.md : 75.0;
+        final leftClearance =
+            landscape ? (88.0 + AppSpacing.md) : AppSpacing.md;
+
+        final availableHeight =
+            constraints.maxHeight - topClearance - bottomClearance;
+
         final Widget panel;
         if (placement.isPlacing) {
           panel = const PlacementHud();
@@ -110,7 +136,7 @@ class _MapArea extends ConsumerWidget {
         } else if (section != null) {
           panel = SectionSheet(
             section: section,
-            maxHeight: constraints.maxHeight - AppSpacing.md * 2,
+            maxHeight: availableHeight > 120 ? availableHeight : 200,
             onClose: ref.read(activeSectionProvider.notifier).close,
           );
         } else if (info != null) {
@@ -122,52 +148,38 @@ class _MapArea extends ConsumerWidget {
           panel = const SizedBox.shrink();
         }
 
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: MapViewport(
-                key: viewportKey,
-                map: map,
-                controller: controller,
-                focusNode: focusNode,
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            leftClearance,
+            topClearance,
+            AppSpacing.md,
+            bottomClearance,
+          ),
+          child: Align(
+            alignment:
+                landscape ? Alignment.bottomLeft : Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: landscape ? 380 : 520,
+              ),
+              child: AnimatedSwitcher(
+                duration: AppConstants.mediumAnimation,
+                switchInCurve: Curves.easeOutCubic,
+                transitionBuilder:
+                    (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.15),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                child: panel,
               ),
             ),
-            Positioned(
-              top: AppSpacing.md,
-              right: AppSpacing.md,
-              child: MapControls(controller: controller),
-            ),
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Align(
-                  alignment:
-                      landscape ? Alignment.bottomLeft : Alignment.bottomCenter,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: landscape ? 380 : 520,
-                    ),
-                    child: AnimatedSwitcher(
-                      duration: AppConstants.mediumAnimation,
-                      switchInCurve: Curves.easeOutCubic,
-                      transitionBuilder:
-                          (child, animation) => FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0, 0.15),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
-                          ),
-                      child: panel,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );

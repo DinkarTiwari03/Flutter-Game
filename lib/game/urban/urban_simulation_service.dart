@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:city_builder_2040/game/buildings/building_definition.dart';
+import 'package:city_builder_2040/game/map/game_map.dart';
 import 'package:city_builder_2040/game/map/grid_point.dart';
 import 'package:city_builder_2040/game/urban/compass_direction.dart';
 import 'package:city_builder_2040/game/urban/pedestrian.dart';
@@ -38,15 +39,16 @@ class UrbanSimulationService extends ChangeNotifier {
   int _lastBuildingCountHash = -1;
 
   /// Updates the road network and prunes entities on deleted roads.
-  void syncBuildings(List<Building> buildings) {
+  void syncBuildings(List<Building> buildings, {GameMap? map}) {
     final currentHash = Object.hash(
       buildings.length,
       buildings.where((b) => b.typeId == 'road').length,
+      map?.tileCount ?? 0,
     );
 
     if (currentHash != _lastBuildingCountHash) {
       _lastBuildingCountHash = currentHash;
-      _roadGraph.updateFromBuildings(buildings);
+      _roadGraph.updateFromBuildings(buildings, map: map);
 
       // Remove vehicles that were on demolished roads
       _vehicles.removeWhere((v) => !_roadGraph.contains(v.currentTile));
@@ -61,8 +63,9 @@ class UrbanSimulationService extends ChangeNotifier {
     required SimulationClock clock,
     int population = 100,
     int happiness = 75,
+    GameMap? map,
   }) {
-    syncBuildings(buildings);
+    syncBuildings(buildings, map: map);
 
     if (_roadGraph.isEmpty) {
       if (_vehicles.isNotEmpty || _pedestrians.isNotEmpty) {

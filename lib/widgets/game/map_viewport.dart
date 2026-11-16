@@ -136,6 +136,7 @@ class _MapViewportState extends ConsumerState<MapViewport>
       clock: clock,
       population: population,
       happiness: happiness,
+      map: widget.map,
     );
   }
 

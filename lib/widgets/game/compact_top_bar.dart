@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/constants/app_routes.dart';
@@ -117,23 +119,42 @@ class CompactTopBar extends ConsumerWidget {
       onPressed: () => Navigator.of(context).pushNamed(AppRoutes.settings),
     );
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: AppColors.skyGradient,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(AppRadius.lg),
-        ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(AppRadius.lg),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xs,
-            AppSpacing.xxs,
-            AppSpacing.xs,
-            AppSpacing.sm,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppColors.hudOverlayGradient,
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(AppRadius.lg),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x4D000000),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.aqua.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
           ),
-          child:
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xs,
+                AppSpacing.xxs,
+                AppSpacing.xs,
+                AppSpacing.sm,
+              ),
+              child:
               singleRow
                   ? Row(
                     children: [
@@ -191,6 +212,8 @@ class CompactTopBar extends ConsumerWidget {
                       ),
                     ],
                   ),
+            ),
+          ),
         ),
       ),
     );
