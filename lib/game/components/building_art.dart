@@ -42,7 +42,7 @@ abstract final class BuildingArt {
     return base + (level - 1) * 8.0;
   }
 
-  /// Calculates the 4 footprint corners of [definition] at [origin] in world space.
+  /// Calculates the 4 footprint corners of a building at [origin] in world space.
   static ({Offset top, Offset right, Offset bottom, Offset left}) footprintCorners(
     GridPoint origin,
     int width,
@@ -71,11 +71,16 @@ abstract final class BuildingArt {
   ///
   /// When [sprite] is non-null the building is rendered as a PNG sprite,
   /// otherwise the procedural 2.5D box renderer is used as a fallback.
+  ///
+  /// [rotation] is 0, 90, 180, or 270 degrees clockwise. For sprites, 90°/270°
+  /// apply a horizontal mirror transform to simulate the alternate orientation
+  /// (isometric assets share one artwork; mirroring gives the facing direction).
   static void paintBuilding({
     required Canvas canvas,
     required BuildingDefinition definition,
     required GridPoint origin,
     int level = 1,
+    int rotation = 0,
     bool isGhost = false,
     bool isValid = true,
     ui.Image? sprite,
@@ -85,12 +90,26 @@ abstract final class BuildingArt {
       return;
     }
 
+    final effW = definition.effectiveWidth(rotation);
+    final effH = definition.effectiveHeight(rotation);
+
     // ── Sprite path ─────────────────────────────────────────────────────────
     if (sprite != null) {
-      _paintSprite(canvas, sprite, definition, origin, level, isGhost, isValid);
+      _paintSpriteRotated(
+        canvas,
+        sprite,
+        definition,
+        origin,
+        level,
+        rotation,
+        effW,
+        effH,
+        isGhost,
+        isValid,
+      );
       // Level indicator on top of the sprite for placed buildings
       if (!isGhost && level > 1) {
-        final c = footprintCorners(origin, definition.width, definition.height);
+        final c = footprintCorners(origin, effW, effH);
         final h = heightFor(definition, level);
         final bottomRoof = Offset(c.bottom.dx, c.bottom.dy - h);
         _paintLevelIndicator(canvas, bottomRoof, level);
@@ -100,7 +119,7 @@ abstract final class BuildingArt {
 
     // ── Procedural fallback ──────────────────────────────────────────────────
     final h = heightFor(definition, level);
-    final c = footprintCorners(origin, definition.width, definition.height);
+    final c = footprintCorners(origin, effW, effH);
 
     // Roof corners (shifted up by h)
     final topRoof = Offset(c.top.dx, c.top.dy - h);
@@ -122,7 +141,7 @@ abstract final class BuildingArt {
         ..color = AppColors.navy.withAlpha(80)
         ..style = PaintingStyle.fill;
       canvas.drawPath(
-        footprintPath(origin, definition.width, definition.height),
+        footprintPath(origin, effW, effH),
         _fill,
       );
     }
@@ -200,18 +219,21 @@ abstract final class BuildingArt {
     }
   }
 
-  // ── Sprite renderer ────────────────────────────────────────────────────────
+  // ── Sprite renderer (rotation-aware) ──────────────────────────────────────
 
-  static void _paintSprite(
+  static void _paintSpriteRotated(
     Canvas canvas,
     ui.Image sprite,
     BuildingDefinition definition,
     GridPoint origin,
     int level,
+    int rotation,
+    int effW,
+    int effH,
     bool isGhost,
     bool isValid,
   ) {
-    final c = footprintCorners(origin, definition.width, definition.height);
+    final c = footprintCorners(origin, effW, effH);
 
     // Footprint width in world pixels (left↔right diagonal).
     final footprintWidth = (c.right.dx - c.left.dx).abs();
@@ -240,13 +262,27 @@ abstract final class BuildingArt {
         ..color = const Color(0xAAFFFFFF); // ~67 % opacity
     }
 
-    canvas.drawImageRect(sprite, src, dst, paint);
+    final norm = rotation % 360;
+    final needsFlip = norm == 90 || norm == 270;
+
+    if (needsFlip) {
+      // Horizontal mirror around the sprite center X.
+      final centerX = dstLeft + footprintWidth / 2;
+      canvas.save();
+      canvas.translate(centerX, 0);
+      canvas.scale(-1, 1);
+      canvas.translate(-centerX, 0);
+      canvas.drawImageRect(sprite, src, dst, paint);
+      canvas.restore();
+    } else {
+      canvas.drawImageRect(sprite, src, dst, paint);
+    }
 
     // Ghost validity outline drawn on the footprint diamond.
     if (isGhost) {
       final outlineColor = isValid ? AppColors.aqua : AppColors.coral;
       canvas.drawPath(
-        footprintPath(origin, definition.width, definition.height),
+        footprintPath(origin, effW, effH),
         Paint()
           ..color = outlineColor.withAlpha(200)
           ..style = PaintingStyle.stroke

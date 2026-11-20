@@ -66,6 +66,9 @@ extension MapCameraCanvas on Canvas {
   /// Applies the camera transform so subsequent drawing uses world units.
   void applyCamera(MapCamera camera) {
     translate(camera.viewportCenter.dx, camera.viewportCenter.dy);
+    if (camera.rotation != 0) {
+      rotate(camera.rotation);
+    }
     scale(camera.zoom);
     translate(-camera.focus.dx, -camera.focus.dy);
   }

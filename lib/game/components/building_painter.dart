@@ -83,7 +83,7 @@ class BuildingPainter extends CustomPainter {
 
         // Selected building highlight foundation
         if (b.id == selectedBuildingId) {
-          _paintSelectionGlow(canvas, origin, def, pixel);
+          _paintSelectionGlow(canvas, origin, def, b.rotation, pixel);
         }
 
         final assetPath = BuildingSpriteRegistry.assetFor(b.typeId, b.level);
@@ -96,6 +96,7 @@ class BuildingPainter extends CustomPainter {
           definition: def,
           origin: origin,
           level: b.level,
+          rotation: b.rotation,
           sprite: assetPath != null ? spriteCache.get(assetPath) : null,
         );
       } else if (item.vehicle != null && urbanCache != null) {
@@ -121,8 +122,9 @@ class BuildingPainter extends CustomPainter {
       final def = placement.activeDefinition!;
       final origin = placement.previewOrigin!;
       final isValid = placement.validation?.isValid ?? false;
+      final rot = placement.rotation;
 
-      _paintPlacementFootprint(canvas, origin, def, isValid, pixel);
+      _paintPlacementFootprint(canvas, origin, def, rot, isValid, pixel);
 
       final assetPath = BuildingSpriteRegistry.assetFor(def.id, 1);
       if (assetPath != null) {
@@ -134,6 +136,7 @@ class BuildingPainter extends CustomPainter {
         definition: def,
         origin: origin,
         level: 1,
+        rotation: rot,
         isGhost: true,
         isValid: isValid,
         sprite: assetPath != null ? spriteCache.get(assetPath) : null,
@@ -147,9 +150,12 @@ class BuildingPainter extends CustomPainter {
     Canvas canvas,
     GridPoint origin,
     BuildingDefinition def,
+    int rotation,
     double pixel,
   ) {
-    final path = BuildingArt.footprintPath(origin, def.width, def.height);
+    final effW = def.effectiveWidth(rotation);
+    final effH = def.effectiveHeight(rotation);
+    final path = BuildingArt.footprintPath(origin, effW, effH);
     canvas.drawPath(
       path,
       Paint()
@@ -172,10 +178,11 @@ class BuildingPainter extends CustomPainter {
     Canvas canvas,
     GridPoint origin,
     BuildingDefinition def,
+    int rotation,
     bool isValid,
     double pixel,
   ) {
-    final footprint = def.footprintTiles(origin);
+    final footprint = def.footprintTilesRotated(origin, rotation);
     final color = isValid ? AppColors.teal : AppColors.coral;
 
     final fillPaint =

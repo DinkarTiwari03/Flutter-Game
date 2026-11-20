@@ -44,6 +44,7 @@ class BuildingService {
     required GridPoint position,
     required GameMap map,
     required List<Building> existingBuildings,
+    int rotation = 0,
   }) async {
     // 1. Grid & terrain placement validation
     final validation = PlacementValidator.validate(
@@ -51,6 +52,7 @@ class BuildingService {
       definition: definition,
       origin: position,
       existingBuildings: existingBuildings,
+      rotation: rotation,
     );
 
     if (!validation.isValid) {
@@ -76,6 +78,7 @@ class BuildingService {
       x: position.col,
       y: position.row,
       level: 1,
+      rotation: rotation,
       createdAt: now,
       updatedAt: now,
     );

@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/backends.dart';
+import 'package:drift/drift.dart' show OpeningDetails, QueryExecutor, QueryExecutorUser;
 import 'package:drift/native.dart';
 import 'package:city_builder_2040/models/app_settings.dart';
 import 'package:city_builder_2040/models/building.dart';
@@ -86,6 +88,7 @@ void main() {
         x: 5,
         y: 10,
         level: 1,
+        rotation: 90,
         createdAt: DateTime.utc(2040, 1, 1),
         updatedAt: DateTime.utc(2040, 1, 1),
       );
@@ -96,6 +99,7 @@ void main() {
         x: 8,
         y: 12,
         level: 2,
+        rotation: 270,
         createdAt: DateTime.utc(2040, 1, 1),
         updatedAt: DateTime.utc(2040, 1, 1),
       );
@@ -105,9 +109,13 @@ void main() {
       var list = await buildingRepo.getBuildings('c1');
       expect(list.length, 1);
       expect(list.first.typeId, 'residential_small');
+      expect(list.first.rotation, 90);
 
       // Batch save
       await buildingRepo.saveBuildings([b1, b2]);
+      list = await buildingRepo.getBuildings('c1');
+      expect(list.length, 2);
+      expect(list.firstWhere((b) => b.id == 'b2').rotation, 270);
       list = await buildingRepo.getBuildings('c1');
       expect(list.length, 2);
 
@@ -120,6 +128,66 @@ void main() {
       // Delete all by city
       await buildingRepo.deleteByCity('c1');
       expect(await buildingRepo.getBuildings('c1'), isEmpty);
+    });
+
+    test('Migration from schema version 1 adds rotation column without data loss', () async {
+      final legacyExecutor = NativeDatabase.memory();
+      // Simulate existing version 1 database without rotation column
+      await legacyExecutor.ensureOpen(_TestDelegate());
+      await legacyExecutor.runCustom(
+        'CREATE TABLE schema_version (version INTEGER NOT NULL)',
+        [],
+      );
+      await legacyExecutor.runCustom(
+        'INSERT INTO schema_version (version) VALUES (1)',
+        [],
+      );
+      await legacyExecutor.runCustom('''
+CREATE TABLE buildings (
+  id TEXT PRIMARY KEY NOT NULL,
+  city_id TEXT NOT NULL,
+  type_id TEXT NOT NULL,
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  level INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+''', []);
+      // Insert legacy building without rotation
+      await legacyExecutor.runCustom('''
+INSERT INTO buildings (id, city_id, type_id, x, y, level, created_at, updated_at)
+VALUES ('legacy1', 'cityA', 'small_house', 3, 4, 1, '2040-01-01T00:00:00.000Z', '2040-01-01T00:00:00.000Z')
+''', []);
+
+      // Now open AppDatabase on this legacy database
+      final migratedDb = await AppDatabase.openInMemory(legacyExecutor);
+      final migratedRepo = LocalBuildingRepository(migratedDb);
+
+      // Existing building loaded cleanly with default rotation 0
+      final existing = await migratedRepo.getBuildings('cityA');
+      expect(existing.length, 1);
+      expect(existing.first.id, 'legacy1');
+      expect(existing.first.rotation, 0);
+
+      // New building with rotation 180 can now be saved without error
+      final newB = Building(
+        id: 'newB',
+        cityId: 'cityA',
+        typeId: 'apartments',
+        x: 5,
+        y: 6,
+        rotation: 180,
+        createdAt: DateTime.utc(2040, 1, 1),
+        updatedAt: DateTime.utc(2040, 1, 1),
+      );
+      await migratedRepo.saveBuilding(newB);
+
+      final reloaded = await migratedRepo.getBuildings('cityA');
+      expect(reloaded.length, 2);
+      expect(reloaded.firstWhere((b) => b.id == 'newB').rotation, 180);
+
+      await migratedDb.close();
     });
 
     test('ResourceLedger persists amounts map and updates correctly', () async {
@@ -287,4 +355,12 @@ void main() {
       }
     });
   });
+}
+
+class _TestDelegate extends QueryExecutorUser {
+  @override
+  int get schemaVersion => 1;
+
+  @override
+  Future<void> beforeOpen(QueryExecutor executor, OpeningDetails details) async {}
 }

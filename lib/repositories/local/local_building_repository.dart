@@ -27,6 +27,7 @@ class LocalBuildingRepository implements BuildingRepository {
         x: building.x,
         y: building.y,
         level: building.level,
+        rotation: building.rotation,
         createdAt: building.createdAt.toUtc().toIso8601String(),
         updatedAt: building.updatedAt.toUtc().toIso8601String(),
       );
@@ -46,6 +47,7 @@ class LocalBuildingRepository implements BuildingRepository {
           x: b.x,
           y: b.y,
           level: b.level,
+          rotation: b.rotation,
           createdAt: b.createdAt.toUtc().toIso8601String(),
           updatedAt: b.updatedAt.toUtc().toIso8601String(),
         );
@@ -81,6 +83,7 @@ class LocalBuildingRepository implements BuildingRepository {
       x: row['x'] as int,
       y: row['y'] as int,
       level: (row['level'] as int?) ?? 1,
+      rotation: (row['rotation'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(row['created_at'] as String),
       updatedAt: DateTime.parse(row['updated_at'] as String),
     );

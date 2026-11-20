@@ -20,6 +20,20 @@ class ZoomViewIntent extends Intent {
   final bool zoomIn;
 }
 
+class RotateViewIntent extends Intent {
+  const RotateViewIntent({required this.clockwise});
+
+  final bool clockwise;
+}
+
+class RotateBuildingIntent extends Intent {
+  const RotateBuildingIntent();
+}
+
+class ToggleInspectorIntent extends Intent {
+  const ToggleInspectorIntent();
+}
+
 class ShowWholeMapIntent extends Intent {
   const ShowWholeMapIntent();
 }
@@ -77,6 +91,14 @@ class GameShortcuts extends ConsumerWidget {
       LogicalKeyboardKey.numpadSubtract,
     ])
       SingleActivator(key): const ZoomViewIntent(zoomIn: false),
+    const SingleActivator(LogicalKeyboardKey.keyQ):
+        const RotateViewIntent(clockwise: false),
+    const SingleActivator(LogicalKeyboardKey.keyE):
+        const RotateViewIntent(clockwise: true),
+    const SingleActivator(LogicalKeyboardKey.keyR):
+        const RotateBuildingIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyH):
+        const ToggleInspectorIntent(),
     const SingleActivator(LogicalKeyboardKey.home): const ShowWholeMapIntent(),
     const SingleActivator(LogicalKeyboardKey.keyG): const ToggleGridIntent(),
     const SingleActivator(LogicalKeyboardKey.space): const TogglePauseIntent(),
@@ -115,6 +137,31 @@ class GameShortcuts extends ConsumerWidget {
               } else {
                 controller.zoomOut();
               }
+              return null;
+            },
+          ),
+          RotateViewIntent: CallbackAction<RotateViewIntent>(
+            onInvoke: (intent) {
+              if (intent.clockwise) {
+                controller.rotateRight();
+              } else {
+                controller.rotateLeft();
+              }
+              return null;
+            },
+          ),
+          RotateBuildingIntent: CallbackAction<RotateBuildingIntent>(
+            onInvoke: (_) {
+              // R key rotates the previewed building in placement mode only.
+              if (ref.read(placementProvider).isPlacing) {
+                ref.read(placementProvider.notifier).rotateBuilding();
+              }
+              return null;
+            },
+          ),
+          ToggleInspectorIntent: CallbackAction<ToggleInspectorIntent>(
+            onInvoke: (_) {
+              ref.read(desktopInspectorVisibleProvider.notifier).toggle();
               return null;
             },
           ),

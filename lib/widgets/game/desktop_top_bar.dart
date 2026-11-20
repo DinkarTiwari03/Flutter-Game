@@ -172,6 +172,26 @@ class DesktopTopBar extends ConsumerWidget {
             const SizedBox(width: AppSpacing.md),
             const SimulationSpeedControl(),
             const SizedBox(width: AppSpacing.xs),
+            Builder(
+              builder: (context) {
+                final showInspector = ref.watch(desktopInspectorVisibleProvider);
+                return IconButton(
+                  key: const ValueKey('btn-toggle-inspector-topbar'),
+                  tooltip: showInspector
+                      ? 'Hide Controls & Info (H)'
+                      : 'Show Controls & Info (H)',
+                  color: showInspector ? AppColors.teal : AppColors.textOnDark,
+                  icon: Icon(
+                    showInspector
+                        ? Icons.view_sidebar_rounded
+                        : Icons.view_sidebar_outlined,
+                  ),
+                  onPressed: () => ref
+                      .read(desktopInspectorVisibleProvider.notifier)
+                      .toggle(),
+                );
+              },
+            ),
             IconButton(
               tooltip: 'Settings',
               color: AppColors.textOnDark,
@@ -189,6 +209,7 @@ class DesktopTopBar extends ConsumerWidget {
         ),
       ),
     ),
-  );
+  ),
+);
 }
 }

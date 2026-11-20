@@ -23,6 +23,18 @@ class CompactTopBar extends ConsumerWidget {
 
   final bool singleRow;
 
+  /// Content height inside the SafeArea for [CompactTopBar].
+  ///
+  /// In landscape ([singleRow] true), everything sits on one row (64.0 logical px).
+  /// In portrait ([singleRow] false), title and resource chips sit in two rows (108.0 logical px).
+  static double contentHeight({required bool singleRow}) =>
+      singleRow ? 64.0 : 108.0;
+
+  /// Total calculated height of the HUD including the top safe area inset.
+  static double totalHeight(BuildContext context, {required bool singleRow}) {
+    return MediaQuery.paddingOf(context).top + contentHeight(singleRow: singleRow);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final city = ref.watch(activeCityProvider);

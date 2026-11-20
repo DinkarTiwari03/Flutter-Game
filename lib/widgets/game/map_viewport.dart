@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -74,13 +75,15 @@ class _MapViewportState extends ConsumerState<MapViewport>
   bool _hadMultiTouch = false;
   VelocityTracker _velocity = VelocityTracker.withKind(PointerDeviceKind.touch);
 
-  // Pinch state.
+  // Pinch & rotation state.
   Offset _pinchFocal = Offset.zero;
   double _pinchDistance = 0;
+  double _pinchAngle = 0;
 
-  // Trackpad pan/zoom state.
+  // Trackpad pan/zoom/rotation state.
   Offset _trackpadPan = Offset.zero;
   double _trackpadScale = 1;
+  double _trackpadRotation = 0;
 
   // Double-tap detection.
   DateTime? _lastTapTime;
@@ -188,6 +191,8 @@ class _MapViewportState extends ConsumerState<MapViewport>
     final points = _pointers.values.take(2).toList();
     _pinchFocal = (points[0] + points[1]) / 2;
     _pinchDistance = (points[0] - points[1]).distance;
+    final diff = points[1] - points[0];
+    _pinchAngle = math.atan2(diff.dy, diff.dx);
   }
 
   void _handleTap(Offset local) {
@@ -215,6 +220,11 @@ class _MapViewportState extends ConsumerState<MapViewport>
         ref.read(placementProvider.notifier).updatePreview(tile);
       }
       return;
+    }
+
+    // Dismiss any open section side panel (e.g. Build tool) when clicking on the map
+    if (ref.read(activeSectionProvider) != null) {
+      ref.read(activeSectionProvider.notifier).close();
     }
 
     final occupied = ref.read(buildingOccupancyProvider);
@@ -295,15 +305,28 @@ class _MapViewportState extends ConsumerState<MapViewport>
     final points = _pointers.values.take(2).toList();
     final focal = (points[0] + points[1]) / 2;
     final distance = (points[0] - points[1]).distance;
+    final diff = points[1] - points[0];
+    final angle = math.atan2(diff.dy, diff.dx);
+
     if (_pinchDistance > 0 && distance > 0) {
+      // Calculate angular delta wrapped to [-pi, pi]
+      var deltaAngle = angle - _pinchAngle;
+      while (deltaAngle > math.pi) deltaAngle -= 2 * math.pi;
+      while (deltaAngle < -math.pi) deltaAngle += 2 * math.pi;
+
+      final newZoom = _camera.zoom * (distance / _pinchDistance);
+      final newRotation = _camera.rotation + deltaAngle;
+
       _camera.anchorAt(
         worldPoint: _camera.screenToWorld(_pinchFocal),
         screenPoint: focal,
-        zoom: _camera.zoom * distance / _pinchDistance,
+        zoom: newZoom,
+        rotation: newRotation,
       );
     }
     _pinchFocal = focal;
     _pinchDistance = distance;
+    _pinchAngle = angle;
   }
 
   void _onPointerUp(PointerUpEvent event) {
@@ -353,15 +376,25 @@ class _MapViewportState extends ConsumerState<MapViewport>
     widget.controller.stop();
     _trackpadPan = Offset.zero;
     _trackpadScale = 1;
+    _trackpadRotation = 0;
   }
 
   void _onPanZoomUpdate(PointerPanZoomUpdateEvent event) {
     final panDelta = event.pan - _trackpadPan;
     final factor = event.scale / _trackpadScale;
+    final rotDelta = event.rotation - _trackpadRotation;
     _trackpadPan = event.pan;
     _trackpadScale = event.scale;
+    _trackpadRotation = event.rotation;
     _camera.panByScreen(panDelta);
-    if (factor != 1) _camera.zoomAt(event.localPosition, _camera.zoom * factor);
+    if (factor != 1 || rotDelta != 0) {
+      _camera.anchorAt(
+        worldPoint: _camera.screenToWorld(event.localPosition),
+        screenPoint: event.localPosition,
+        zoom: _camera.zoom * factor,
+        rotation: _camera.rotation + rotDelta,
+      );
+    }
   }
 
   void _onHover(PointerHoverEvent event) {

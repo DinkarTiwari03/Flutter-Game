@@ -39,6 +39,13 @@ class PhoneGameLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topHudHeight =
+        CompactTopBar.totalHeight(context, singleRow: landscape);
+    // Responsive vertical gap of 18 logical pixels (within the 16–20px range)
+    // between the bottom of the top HUD and the top of the plus (+) zoom button.
+    const verticalGap = 18.0;
+    final controlsTop = topHudHeight + verticalGap;
+
     return Scaffold(
       backgroundColor: AppColors.navy,
       body: Stack(
@@ -56,13 +63,13 @@ class PhoneGameLayout extends StatelessWidget {
 
           // ── Layer 3: Camera controls (zoom, reset camera, grid toggle) ──
           Positioned(
-            top: landscape ? 70.0 : 135.0,
+            top: controlsTop,
             right: AppSpacing.md,
             child: SafeArea(
-              top: landscape,
-              bottom: false,
+              top: false,
+              bottom: true,
               left: false,
-              right: false,
+              right: true,
               child: MapControls(controller: controller),
             ),
           ),
@@ -117,7 +124,9 @@ class _FloatingPanels extends ConsumerWidget {
       builder: (context, constraints) {
         // Vertical and horizontal clearance ensuring panels sit comfortably
         // between the floating top HUD and bottom navigation.
-        final topClearance = landscape ? 65.0 : 130.0;
+        final topClearance =
+            CompactTopBar.totalHeight(context, singleRow: landscape) +
+            AppSpacing.xs;
         final bottomClearance = landscape ? AppSpacing.md : 75.0;
         final leftClearance =
             landscape ? (88.0 + AppSpacing.md) : AppSpacing.md;

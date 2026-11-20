@@ -104,6 +104,10 @@ Shared contract (documented on `CityRepository`):
 | Urban Life Simulation | Complete (Pedestrian walking with stride animations, 19 vehicle types, right-hand lane physics, road graph pathfinding, day/night headlights, tests, docs) |
 | Full-Viewport Isometric World & Expansion | Complete (Minecraft-style full-viewport camera, adaptive min zoom eliminating purple margins, double-tap fit, pinch/wheel/pan, expandable deterministic world system, tests, docs) |
 | Immersive Top HUD Overlay | Complete (Clash of Clans style floating HUD, full-screen map background layer, frosted glassmorphic backdrop, non-overlapping z-ordering, tests, docs) |
+| Immediate Building-Driven Urban Life | Complete (Instant activation upon placing 1st building, staggered pedestrian & vehicle bursts, category-specific entities, minimum active caps, tests, docs) |
+| Interactive Isometric Map Rotation | Complete (Continuous 360-degree rotation, 2-finger twist touch gestures, Q/E Windows shortcuts, UI rotate buttons, full coordinate & placement compatibility, tests, docs) |
+| Building Rotation System | Complete (4-direction 0°/90°/180°/270° orientation, R key shortcut, HUD rotate button, sprite & procedural rendering, rotated footprint collision, tests, docs) |
+| Windows Desktop UI Improvements | Complete (Non-overlapping Column architecture, tool toggle/deselect on click & tap outside, collapsible right Keys panel with H shortcut & topbar button, responsive resolution scaling, mobile UI 100% preserved, tests, docs) |
 
 ## Handoffs
 - [Phase 01](HANDOFFS/PHASE_01.md)
@@ -119,3 +123,7 @@ Shared contract (documented on `CityRepository`):
 - [Urban Life Simulation](HANDOFFS/URBAN_LIFE_SIMULATION.md)
 - [Full-Viewport Camera & World Expansion](HANDOFFS/CAMERA_WORLD_EXPANSION.md)
 - [Immersive Top HUD Overlay](HANDOFFS/IMMERSIVE_HUD_OVERLAY.md)
+- [Immediate Building-Driven Urban Life](HANDOFFS/BUILDING_DRIVEN_URBAN_LIFE.md)
+- [Interactive Isometric Map Rotation](HANDOFFS/MAP_ROTATION.md)
+- [Building Rotation System](HANDOFFS/BUILDING_ROTATION.md)
+- [Windows Desktop UI Improvements](HANDOFFS/DESKTOP_UI_FIXES.md)

@@ -13,6 +13,7 @@ class Building {
     required this.createdAt,
     required this.updatedAt,
     this.level = 1,
+    this.rotation = 0,
   });
 
   factory Building.fromJson(Map<String, Object?> json) {
@@ -23,6 +24,7 @@ class Building {
       x: (json['x'] as num).toInt(),
       y: (json['y'] as num).toInt(),
       level: (json['level'] as num).toInt(),
+      rotation: (json['rotation'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -34,10 +36,14 @@ class Building {
   final int x;
   final int y;
   final int level;
+
+  /// Building orientation in degrees. Must be 0, 90, 180, or 270.
+  final int rotation;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  Building copyWith({int? level, DateTime? updatedAt}) {
+  Building copyWith({int? level, int? rotation, DateTime? updatedAt}) {
     return Building(
       id: id,
       cityId: cityId,
@@ -45,6 +51,7 @@ class Building {
       x: x,
       y: y,
       level: level ?? this.level,
+      rotation: rotation ?? this.rotation,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -57,6 +64,7 @@ class Building {
     'x': x,
     'y': y,
     'level': level,
+    'rotation': rotation,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
   };

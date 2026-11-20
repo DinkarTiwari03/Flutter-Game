@@ -12,7 +12,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 // Schema version
 // ---------------------------------------------------------------------------
 
-const int _schemaVersion = 1;
+const int _schemaVersion = 2;
 
 // ---------------------------------------------------------------------------
 // AppDatabase
@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS buildings (
   x INTEGER NOT NULL,
   y INTEGER NOT NULL,
   level INTEGER NOT NULL DEFAULT 1,
+  rotation INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 )
@@ -162,6 +163,16 @@ CREATE TABLE IF NOT EXISTS app_settings (
           [_schemaVersion],
         );
       }
+    }
+
+    // Always run rotation column migration to guarantee backward-compatibility
+    // with databases initialized at schema version 1.
+    try {
+      await _run(
+        'ALTER TABLE buildings ADD COLUMN rotation INTEGER NOT NULL DEFAULT 0',
+      );
+    } catch (_) {
+      // Column already exists.
     }
   }
 
@@ -246,19 +257,21 @@ ON CONFLICT(id) DO UPDATE SET
     required int x,
     required int y,
     required int level,
+    int rotation = 0,
     required String createdAt,
     required String updatedAt,
   }) async {
     await _executor.runUpdate('''
-INSERT INTO buildings (id, city_id, type_id, x, y, level, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO buildings (id, city_id, type_id, x, y, level, rotation, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
   type_id = excluded.type_id,
   x = excluded.x,
   y = excluded.y,
   level = excluded.level,
+  rotation = excluded.rotation,
   updated_at = excluded.updated_at
-''', [id, cityId, typeId, x, y, level, createdAt, updatedAt]);
+''', [id, cityId, typeId, x, y, level, rotation, createdAt, updatedAt]);
   }
 
   Future<void> removeBuilding(String cityId, String buildingId) =>

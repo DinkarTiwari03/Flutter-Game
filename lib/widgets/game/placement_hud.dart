@@ -9,7 +9,8 @@ import 'package:city_builder_2040/widgets/game_card.dart';
 
 /// Floating HUD displayed during building placement.
 ///
-/// Shows current preview status, cost, footprint, and confirm/cancel actions.
+/// Shows current preview status, cost, footprint, confirm/cancel actions,
+/// and a rotate button (90° increments, also triggered by R on Windows).
 class PlacementHud extends ConsumerWidget {
   const PlacementHud({super.key});
 
@@ -24,6 +25,7 @@ class PlacementHud extends ConsumerWidget {
     final currentCoins = ref.watch(cityStatsProvider)?.coins ?? 0;
     final hasFunds = currentCoins >= def.cost;
     final isValid = isPositionValid && hasFunds;
+    final rotation = placement.rotation;
 
     final String statusMessage;
     if (!hasFunds) {
@@ -31,6 +33,10 @@ class PlacementHud extends ConsumerWidget {
     } else {
       statusMessage = validation?.message ?? 'Positioning...';
     }
+
+    // Show effective dimensions after rotation
+    final effW = def.effectiveWidth(rotation);
+    final effH = def.effectiveHeight(rotation);
 
     return GameCard(
       key: const ValueKey('placement-hud'),
@@ -72,8 +78,8 @@ class PlacementHud extends ConsumerWidget {
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Text(
-                          '${def.width}x${def.height}',
-                          style: TextStyle(
+                          '${effW}x${effH}',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.teal,
@@ -143,7 +149,7 @@ class PlacementHud extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          // Action buttons
+          // Action buttons row: Cancel | Rotate | Construct
           Row(
             children: [
               Expanded(
@@ -164,7 +170,37 @@ class PlacementHud extends ConsumerWidget {
                   },
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
+              // Rotate button (single button: taps cycle 0° -> 90° -> 180° -> 270° -> 0°)
+              OutlinedButton(
+                key: const ValueKey('btn-rotate-building'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.navy,
+                  side: BorderSide(color: AppColors.teal.withAlpha(180)),
+                  backgroundColor: AppColors.teal.withAlpha(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                ),
+                onPressed: () {
+                  ref.read(placementProvider.notifier).rotateBuilding();
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.rotate_right_rounded, size: 18),
+                    Text(
+                      '${rotation}°',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: ElevatedButton.icon(
                   key: const ValueKey('btn-confirm-placement'),
@@ -183,9 +219,31 @@ class PlacementHud extends ConsumerWidget {
                   ),
                   onPressed: isValid
                       ? () async {
-                          await ref
-                              .read(placementProvider.notifier)
-                              .confirmPlacement();
+                          try {
+                            final placed = await ref
+                                .read(placementProvider.notifier)
+                                .confirmPlacement();
+                            if (placed == null && context.mounted) {
+                              final msg = ref.read(placementProvider).validation?.message ??
+                                  'Cannot construct here';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(msg),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Construction failed: $e'),
+                                  backgroundColor: AppColors.coral,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          }
                         }
                       : null,
                 ),

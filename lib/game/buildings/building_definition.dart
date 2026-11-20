@@ -159,6 +159,48 @@ class BuildingDefinition {
     return tiles;
   }
 
+  /// Generates all [GridPoint]s occupied by this building at [origin]
+  /// when rotated by [rotation] degrees (0, 90, 180, or 270 clockwise).
+  ///
+  /// - 0°/180°: same width × height layout.
+  /// - 90°/270°: dimensions swap — effective width = height, effective height = width.
+  List<GridPoint> footprintTilesRotated(GridPoint origin, int rotation) {
+    final tiles = <GridPoint>[];
+    final norm = rotation % 360;
+    switch (norm) {
+      case 0:
+      case 180:
+        for (var dr = 0; dr < height; dr++) {
+          for (var dc = 0; dc < width; dc++) {
+            tiles.add(GridPoint(origin.col + dc, origin.row + dr));
+          }
+        }
+      case 90:
+      case 270:
+        // Effective footprint: height cols × width rows.
+        for (var dr = 0; dr < width; dr++) {
+          for (var dc = 0; dc < height; dc++) {
+            tiles.add(GridPoint(origin.col + dc, origin.row + dr));
+          }
+        }
+      default:
+        return footprintTiles(origin);
+    }
+    return tiles;
+  }
+
+  /// Returns the effective [width] when this building is rotated [rotation] degrees.
+  int effectiveWidth(int rotation) {
+    final norm = rotation % 360;
+    return (norm == 90 || norm == 270) ? height : width;
+  }
+
+  /// Returns the effective [height] when this building is rotated [rotation] degrees.
+  int effectiveHeight(int rotation) {
+    final norm = rotation % 360;
+    return (norm == 90 || norm == 270) ? width : height;
+  }
+
   /// Calculates the cost to upgrade from [currentLevel] to [currentLevel] + 1.
   /// Returns null if the building is already at its maximum level.
   int? upgradeCost(int currentLevel) {

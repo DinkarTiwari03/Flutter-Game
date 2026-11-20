@@ -116,3 +116,18 @@ final simulationSpeedProvider =
       SimulationSpeedNotifier.new,
     );
 
+/// Controls whether the right-side inspector and shortcut hints panel is visible on desktop.
+class DesktopInspectorVisibleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+  void show() => state = true;
+  void hide() => state = false;
+}
+
+final desktopInspectorVisibleProvider =
+    NotifierProvider<DesktopInspectorVisibleNotifier, bool>(
+      DesktopInspectorVisibleNotifier.new,
+    );
+

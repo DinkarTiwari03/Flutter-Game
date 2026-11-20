@@ -102,9 +102,10 @@ class SectionSheet extends StatelessWidget {
 
 /// Desktop: a full-height panel docked beside the map.
 class SectionSidePanel extends StatelessWidget {
-  const SectionSidePanel({super.key, required this.section});
+  const SectionSidePanel({super.key, required this.section, this.onClose});
 
   final GameSection section;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +120,7 @@ class SectionSidePanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SectionPanelHeader(section: section),
+            SectionPanelHeader(section: section, onClose: onClose),
             const SizedBox(height: AppSpacing.md),
             Expanded(
               child: SingleChildScrollView(

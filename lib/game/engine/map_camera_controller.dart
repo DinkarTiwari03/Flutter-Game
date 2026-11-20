@@ -28,12 +28,14 @@ class MapCameraController {
   final AnimationController _transition;
   final AnimationController _fling;
 
-  // Transition state: interpolates focus and zoom, optionally anchored so a
-  // chosen screen point stays put while zooming.
+  // Transition state: interpolates focus, zoom, and rotation, optionally anchored so a
+  // chosen screen point stays put while zooming and rotating.
   Offset _fromFocus = Offset.zero;
   Offset _toFocus = Offset.zero;
   double _fromZoom = 1;
   double _toZoom = 1;
+  double _fromRotation = 0;
+  double _toRotation = 0;
   Offset? _anchorScreen;
   Offset? _anchorWorld;
 
@@ -45,6 +47,10 @@ class MapCameraController {
 
   /// Target zoom of the running (or last) animation, for compounding steps.
   double get targetZoom => _transition.isAnimating ? _toZoom : camera.zoom;
+
+  /// Target rotation in radians of running animation.
+  double get targetRotation =>
+      _transition.isAnimating ? _toRotation : camera.rotation;
 
   Offset get _targetFocus => _transition.isAnimating ? _toFocus : camera.focus;
 
@@ -71,7 +77,11 @@ class MapCameraController {
   /// animated. Repeated calls compound smoothly, e.g. from key repeat.
   void panBy(Offset screenDelta) {
     final zoom = _transition.isAnimating ? _toZoom : camera.zoom;
-    _animate(focus: _targetFocus + screenDelta / zoom);
+    final rot = _transition.isAnimating ? _toRotation : camera.rotation;
+    final delta = rot == 0
+        ? screenDelta
+        : MapCamera.rotateOffset(screenDelta, -rot);
+    _animate(focus: _targetFocus + delta / zoom);
   }
 
   void focusOn(GridPoint tile, {double? zoom}) {
@@ -90,14 +100,47 @@ class MapCameraController {
     );
   }
 
-  /// Frames the whole map.
-  void showWholeMap() {
+  /// Rotates the camera by [deltaRadians] around [screenPoint] (viewport center
+  /// by default), animated.
+  void rotateBy(
+    double deltaRadians, {
+    Offset? screenPoint,
+    Duration duration = const Duration(milliseconds: 260),
+  }) {
+    final anchor = screenPoint ?? camera.viewportCenter;
+    _animate(
+      rotation: targetRotation + deltaRadians,
+      anchorScreen: anchor,
+      duration: duration,
+    );
+  }
+
+  /// Rotates counterclockwise (45 degrees by default).
+  void rotateLeft({double step = math.pi / 4}) => rotateBy(-step);
+
+  /// Rotates clockwise (45 degrees by default).
+  void rotateRight({double step = math.pi / 4}) => rotateBy(step);
+
+  /// Smoothly animates camera rotation back to 0.0 (default orientation).
+  void resetRotation() {
+    _animate(
+      rotation: 0.0,
+      duration: const Duration(milliseconds: 280),
+    );
+  }
+
+  /// Restores default map orientation (0 rotation) and frames the whole map.
+  void resetCamera() {
     _animate(
       focus: camera.worldBounds.center,
       zoom: camera.fitZoom,
+      rotation: 0.0,
       duration: const Duration(milliseconds: 420),
     );
   }
+
+  /// Frames the whole map and resets orientation.
+  void showWholeMap() => resetCamera();
 
   /// Zooms the camera to completely fill the viewport with terrain (no border margins).
   void fillViewport() {
@@ -129,15 +172,25 @@ class MapCameraController {
   void _animate({
     Offset? focus,
     double? zoom,
+    double? rotation,
     Offset? anchorScreen,
     Duration duration = const Duration(milliseconds: 220),
   }) {
     _fling.stop();
     _fromFocus = camera.focus;
     _fromZoom = camera.zoom;
+    _fromRotation = camera.rotation;
     _toFocus = focus ?? _targetFocus;
     _toZoom =
         (zoom ?? targetZoom).clamp(camera.effectiveMinZoom, camera.maxZoom).toDouble();
+
+    // Use shortest angular path for smooth rotation interpolation
+    final desiredRotation = rotation ?? targetRotation;
+    var deltaRot = desiredRotation - _fromRotation;
+    while (deltaRot > math.pi) deltaRot -= 2 * math.pi;
+    while (deltaRot < -math.pi) deltaRot += 2 * math.pi;
+    _toRotation = _fromRotation + deltaRot;
+
     _anchorScreen = anchorScreen;
     _anchorWorld =
         anchorScreen == null ? null : camera.screenToWorld(anchorScreen);
@@ -149,6 +202,7 @@ class MapCameraController {
   void _onTransitionTick() {
     final t = Curves.easeOutCubic.transform(_transition.value);
     final zoom = _fromZoom + (_toZoom - _fromZoom) * t;
+    final rotation = _fromRotation + (_toRotation - _fromRotation) * t;
     final anchorScreen = _anchorScreen;
     final anchorWorld = _anchorWorld;
     if (anchorScreen != null && anchorWorld != null) {
@@ -156,9 +210,14 @@ class MapCameraController {
         worldPoint: anchorWorld,
         screenPoint: anchorScreen,
         zoom: zoom,
+        rotation: rotation,
       );
     } else {
-      camera.jumpTo(focus: Offset.lerp(_fromFocus, _toFocus, t), zoom: zoom);
+      camera.jumpTo(
+        focus: Offset.lerp(_fromFocus, _toFocus, t),
+        zoom: zoom,
+        rotation: rotation,
+      );
     }
   }
 

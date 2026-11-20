@@ -12,11 +12,14 @@ class ShortcutHints extends StatelessWidget {
     ('Wheel', 'Zoom at cursor'),
     ('W A S D / Arrows', 'Move the map'),
     ('+ / -', 'Zoom'),
+    ('Q / E', 'Rotate map'),
+    ('R', 'Rotate building'),
     ('Home', 'Show whole map'),
     ('G', 'Toggle grid'),
     ('Space', 'Pause / resume'),
     ('1 - 5', 'Open a section'),
-    ('Esc', 'Deselect'),
+    ('H', 'Toggle Controls panel'),
+    ('Esc', 'Deselect / Close'),
   ];
 
   @override

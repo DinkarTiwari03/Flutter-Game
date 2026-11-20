@@ -143,10 +143,20 @@ void main() {
       await _pumpGame(tester, _desktop);
       expect(find.byType(DesktopTopBar), findsOneWidget);
       expect(find.byType(CompactTopBar), findsNothing);
-      expect(find.byKey(const ValueKey('section-panel-build')), findsOneWidget);
-      expect(find.byKey(const ValueKey('tile-info-empty')), findsOneWidget);
-      expect(find.byKey(const ValueKey('shortcut-hints')), findsOneWidget);
       expect(find.text('25,000'), findsOneWidget);
+
+      // Build tool is not automatically selected on launch
+      expect(find.byKey(const ValueKey('section-panel-build')), findsNothing);
+
+      // Selecting the Build tool in the rail opens its side panel
+      await tester.tap(find.byKey(const ValueKey('nav-build')));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const ValueKey('section-panel-build')), findsOneWidget);
+
+      // Tapping the toggle button opens the right-side inspector & hints panel
+      await tester.tap(find.byKey(const ValueKey('btn-map-toggle-inspector')));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const ValueKey('shortcut-hints')), findsOneWidget);
     });
 
     testWidgets('small layouts do not overflow', (tester) async {

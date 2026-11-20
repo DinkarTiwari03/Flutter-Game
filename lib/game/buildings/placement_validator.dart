@@ -40,13 +40,16 @@ class PlacementValidationResult {
 abstract final class PlacementValidator {
   /// Validates [definition] positioned with its top-left at [origin] on [map],
   /// checking against map bounds, terrain types, and [existingBuildings].
+  ///
+  /// [rotation] must be 0, 90, 180, or 270 (defaults to 0).
   static PlacementValidationResult validate({
     required GameMap map,
     required BuildingDefinition definition,
     required GridPoint origin,
     required List<Building> existingBuildings,
+    int rotation = 0,
   }) {
-    final footprint = definition.footprintTiles(origin);
+    final footprint = definition.footprintTilesRotated(origin, rotation);
     final invalidTiles = <GridPoint>{};
 
     // 1. Check map boundaries
@@ -66,12 +69,12 @@ abstract final class PlacementValidator {
       );
     }
 
-    // 2. Build occupancy lookup for existing buildings
+    // 2. Build occupancy lookup for existing buildings (respecting their rotation)
     final occupiedTiles = <GridPoint, Building>{};
     for (final b in existingBuildings) {
       final def = BuildingRegistry.get(b.typeId);
       if (def == null) continue;
-      for (final t in def.footprintTiles(GridPoint(b.x, b.y))) {
+      for (final t in def.footprintTilesRotated(GridPoint(b.x, b.y), b.rotation)) {
         occupiedTiles[t] = b;
       }
     }

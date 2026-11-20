@@ -17,28 +17,21 @@ class MapControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showGrid = ref.watch(showGridProvider);
+    final isLandscape =
+        MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
+    final btnSize = isLandscape ? 40.0 : 44.0;
+    final iconSize = isLandscape ? 20.0 : 22.0;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _ControlButton(
-          buttonKey: const ValueKey('control-zoom-in'),
-          icon: Icons.add_rounded,
-          tooltip: 'Zoom in (+)',
-          onPressed: controller.zoomIn,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        _ControlButton(
-          buttonKey: const ValueKey('control-zoom-out'),
-          icon: Icons.remove_rounded,
-          tooltip: 'Zoom out (-)',
-          onPressed: controller.zoomOut,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        _ControlButton(
           buttonKey: const ValueKey('control-fit'),
-          icon: Icons.fit_screen_rounded,
-          tooltip: 'Show whole map (Home)',
-          onPressed: controller.showWholeMap,
+          icon: Icons.explore_rounded,
+          tooltip: 'Reset camera (Home)',
+          size: btnSize,
+          iconSize: iconSize,
+          onPressed: controller.resetCamera,
         ),
         const SizedBox(height: AppSpacing.xs),
         _ControlButton(
@@ -46,6 +39,8 @@ class MapControls extends ConsumerWidget {
           icon: Icons.grid_4x4_rounded,
           tooltip: 'Toggle grid (G)',
           selected: showGrid,
+          size: btnSize,
+          iconSize: iconSize,
           onPressed: ref.read(showGridProvider.notifier).toggle,
         ),
       ],
@@ -60,6 +55,8 @@ class _ControlButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.selected = false,
+    this.size = 44.0,
+    this.iconSize = 22.0,
   });
 
   final Key buttonKey;
@@ -67,6 +64,8 @@ class _ControlButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
   final bool selected;
+  final double size;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -97,10 +96,11 @@ class _ControlButton extends StatelessWidget {
               borderRadius: radius,
               onTap: onPressed,
               child: SizedBox(
-                width: 48,
-                height: 48,
+                width: size,
+                height: size,
                 child: Icon(
                   icon,
+                  size: iconSize,
                   color: selected ? Colors.white : AppColors.deepBlue,
                 ),
               ),
