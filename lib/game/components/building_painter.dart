@@ -30,6 +30,7 @@ class BuildingPainter extends CustomPainter {
     this.urbanService,
     this.urbanCache,
     this.clock,
+    this.showTrafficHeatmap = false,
   }) : super(repaint: urbanService != null ? Listenable.merge([camera, urbanService]) : camera);
 
   final MapCamera camera;
@@ -41,6 +42,7 @@ class BuildingPainter extends CustomPainter {
   final UrbanSimulationService? urbanService;
   final UrbanSpriteCache? urbanCache;
   final SimulationClock? clock;
+  final bool showTrafficHeatmap;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -50,6 +52,15 @@ class BuildingPainter extends CustomPainter {
     final pixel = 1 / camera.zoom;
     final isNight = clock != null &&
         (clock!.phase == DayPhase.night || clock!.phase == DayPhase.dusk);
+
+    // 0. Render dynamic Traffic Congestion Heatmap overlay on road tiles
+    if (showTrafficHeatmap && urbanService != null) {
+      UrbanArt.paintTrafficHeatmap(
+        canvas: canvas,
+        graph: urbanService!.roadGraph,
+        segmentStats: urbanService!.trafficMetrics.segmentStats,
+      );
+    }
 
     // 1. Merge buildings, vehicles, and pedestrians for unified isometric depth sorting
     final renderItems = <_DepthItem>[];
@@ -210,7 +221,8 @@ class BuildingPainter extends CustomPainter {
       oldDelegate.selectedBuildingId != selectedBuildingId ||
       oldDelegate.spriteCache != spriteCache ||
       oldDelegate.urbanService != urbanService ||
-      oldDelegate.clock != clock;
+      oldDelegate.clock != clock ||
+      oldDelegate.showTrafficHeatmap != showTrafficHeatmap;
 }
 
 class _DepthItem {

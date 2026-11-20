@@ -41,6 +41,7 @@ class BuildingResourceConfig {
     this.healthcareCapacity = 0,
     this.educationCapacity = 0,
     this.safetyCapacity = 0,
+    this.trafficCapacity = 0,
   });
 
   /// Maximum residents this building can house (residential).
@@ -90,6 +91,9 @@ class BuildingResourceConfig {
 
   /// Public safety coverage provided for citizens (police/fire).
   final int safetyCapacity;
+
+  /// Vehicle capacity per tile for roads.
+  final int trafficCapacity;
 }
 
 /// Reusable definition of a constructible building type.
@@ -143,6 +147,21 @@ class BuildingDefinition {
 
   /// Whether this building is a road segment.
   bool get isRoad => id == 'road';
+
+  /// Whether this building is a public transit facility.
+  bool get isPublicTransit => id == 'bus_stop' || id == 'bus_station';
+
+  /// Effective vehicle capacity per tile at [level] (for roads).
+  int effectiveRoadCapacity(int level) {
+    if (!isRoad) return 0;
+    return switch (level) {
+      1 => 4,   // Small Road
+      2 => 8,   // Medium Avenue
+      3 => 16,  // Large Boulevard
+      4 => 32,  // High-Capacity Expressway
+      _ => level > 4 ? 32 : 4,
+    };
+  }
 
   /// Total number of tiles occupied by this building.
   int get tileCount => width * height;
@@ -580,15 +599,55 @@ abstract final class BuildingRegistry {
     id: 'road',
     name: 'Road',
     category: BuildingCategory.infrastructure,
-    description: 'Paved transit route connecting city zones.',
+    description: 'Paved transit route connecting city zones. Upgradeable to Medium Avenue, Large Boulevard, and Expressway.',
     width: 1,
     height: 1,
     cost: 25,
-    baseUpgradeCost: 0,
-    maxLevel: 1,
+    baseUpgradeCost: 50,
+    maxLevel: 4,
     icon: Icons.add_road_rounded,
     resources: BuildingResourceConfig(
       maintenanceCost: 1,
+      trafficCapacity: 4,
+    ),
+  );
+
+  static const busStop = BuildingDefinition(
+    id: 'bus_stop',
+    name: 'Bus Stop',
+    category: BuildingCategory.infrastructure,
+    description: 'Local public transit shelter allowing citizens to catch buses and reduce road congestion.',
+    width: 1,
+    height: 1,
+    cost: 120,
+    baseUpgradeCost: 80,
+    maxLevel: 2,
+    icon: Icons.directions_bus_filled_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 5,
+      electricityConsumption: 2,
+      happinessBonus: 3,
+      jobsProvided: 2,
+    ),
+  );
+
+  static const busStation = BuildingDefinition(
+    id: 'bus_station',
+    name: 'Bus Terminal',
+    category: BuildingCategory.publicServices,
+    description: 'Multi-bay public transit hub operating bus routes and significantly cutting commuter traffic.',
+    width: 2,
+    height: 2,
+    cost: 750,
+    baseUpgradeCost: 450,
+    maxLevel: 3,
+    icon: Icons.departure_board_rounded,
+    resources: BuildingResourceConfig(
+      maintenanceCost: 35,
+      electricityConsumption: 14,
+      waterConsumption: 8,
+      happinessBonus: 8,
+      jobsProvided: 16,
     ),
   );
 
@@ -735,6 +794,8 @@ abstract final class BuildingRegistry {
     garden.id: garden,
     solarPlant.id: solarPlant,
     waterTreatment.id: waterTreatment,
+    busStop.id: busStop,
+    busStation.id: busStation,
   };
 
   /// Retrieves a building definition by its string [typeId].

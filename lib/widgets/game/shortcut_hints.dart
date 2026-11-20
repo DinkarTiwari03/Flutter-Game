@@ -17,7 +17,8 @@ class ShortcutHints extends StatelessWidget {
     ('Home', 'Show whole map'),
     ('G', 'Toggle grid'),
     ('Space', 'Pause / resume'),
-    ('1 - 5', 'Open a section'),
+    ('1 - 6', 'Open a section'),
+    ('T', 'Toggle traffic heatmap'),
     ('H', 'Toggle Controls panel'),
     ('Esc', 'Deselect / Close'),
   ];

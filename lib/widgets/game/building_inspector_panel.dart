@@ -153,6 +153,18 @@ class BuildingInspectorPanel extends ConsumerWidget {
                 spacing: AppSpacing.sm,
                 runSpacing: 4,
                 children: [
+                  if (def.isRoad)
+                    _ResourceBadge(
+                      icon: Icons.traffic_rounded,
+                      label: 'Capacity: ${def.effectiveRoadCapacity(building.level)} veh',
+                      color: AppColors.teal,
+                    ),
+                  if (def.isPublicTransit)
+                    _ResourceBadge(
+                      icon: Icons.directions_bus_rounded,
+                      label: 'Transit: Cuts Congestion',
+                      color: AppColors.sunrise,
+                    ),
                   if (housing > 0)
                     _ResourceBadge(
                       icon: Icons.people_rounded,

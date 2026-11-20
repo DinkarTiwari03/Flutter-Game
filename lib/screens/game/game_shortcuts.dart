@@ -6,6 +6,7 @@ import 'package:city_builder_2040/game/engine/map_camera_controller.dart';
 import 'package:city_builder_2040/models/game_section.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/urban_providers.dart';
 
 class PanViewIntent extends Intent {
   const PanViewIntent(this.direction);
@@ -32,6 +33,10 @@ class RotateBuildingIntent extends Intent {
 
 class ToggleInspectorIntent extends Intent {
   const ToggleInspectorIntent();
+}
+
+class ToggleTrafficHeatmapIntent extends Intent {
+  const ToggleTrafficHeatmapIntent();
 }
 
 class ShowWholeMapIntent extends Intent {
@@ -99,6 +104,8 @@ class GameShortcuts extends ConsumerWidget {
         const RotateBuildingIntent(),
     const SingleActivator(LogicalKeyboardKey.keyH):
         const ToggleInspectorIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyT):
+        const ToggleTrafficHeatmapIntent(),
     const SingleActivator(LogicalKeyboardKey.home): const ShowWholeMapIntent(),
     const SingleActivator(LogicalKeyboardKey.keyG): const ToggleGridIntent(),
     const SingleActivator(LogicalKeyboardKey.space): const TogglePauseIntent(),
@@ -114,6 +121,7 @@ class GameShortcuts extends ConsumerWidget {
     LogicalKeyboardKey.digit3,
     LogicalKeyboardKey.digit4,
     LogicalKeyboardKey.digit5,
+    LogicalKeyboardKey.digit6,
   ];
 
   @override
@@ -162,6 +170,12 @@ class GameShortcuts extends ConsumerWidget {
           ToggleInspectorIntent: CallbackAction<ToggleInspectorIntent>(
             onInvoke: (_) {
               ref.read(desktopInspectorVisibleProvider.notifier).toggle();
+              return null;
+            },
+          ),
+          ToggleTrafficHeatmapIntent: CallbackAction<ToggleTrafficHeatmapIntent>(
+            onInvoke: (_) {
+              ref.read(trafficHeatmapVisibleProvider.notifier).toggle();
               return null;
             },
           ),

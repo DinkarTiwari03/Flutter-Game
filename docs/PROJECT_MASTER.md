@@ -108,6 +108,8 @@ Shared contract (documented on `CityRepository`):
 | Interactive Isometric Map Rotation | Complete (Continuous 360-degree rotation, 2-finger twist touch gestures, Q/E Windows shortcuts, UI rotate buttons, full coordinate & placement compatibility, tests, docs) |
 | Building Rotation System | Complete (4-direction 0°/90°/180°/270° orientation, R key shortcut, HUD rotate button, sprite & procedural rendering, rotated footprint collision, tests, docs) |
 | Windows Desktop UI Improvements | Complete (Non-overlapping Column architecture, tool toggle/deselect on click & tap outside, collapsible right Keys panel with H shortcut & topbar button, responsive resolution scaling, mobile UI 100% preserved, tests, docs) |
+| V2 Phase 01: Advanced Traffic Simulation | Complete (5 vehicle categories, OD-pattern demand spawning, 4-condition congestion system (Free Flow/Moderate/Heavy/Gridlock), 4-tier road upgrades, auto traffic signals, congestion-aware A* rerouting, bus stops & bus stations, traffic heatmap overlay (T key), Traffic Management Dashboard, actionable alerts, economic loss integration, tests, docs) |
+| V2 Phase 02: Natural Disaster System | Complete (Modular disaster engine, 6-stage lifecycle, 5 disaster types: Earthquake, Fire with spread mechanics, Flood, Storm, Heatwave, dynamic road network blockages, congestion-aware traffic bypass, post-disaster reports, scenario testing mode, tests, docs) |
 
 ## Handoffs
 - [Phase 01](HANDOFFS/PHASE_01.md)
@@ -127,3 +129,5 @@ Shared contract (documented on `CityRepository`):
 - [Interactive Isometric Map Rotation](HANDOFFS/MAP_ROTATION.md)
 - [Building Rotation System](HANDOFFS/BUILDING_ROTATION.md)
 - [Windows Desktop UI Improvements](HANDOFFS/DESKTOP_UI_FIXES.md)
+- [V2 Phase 01: Advanced Traffic Simulation](HANDOFFS/V2_PHASE_01.md)
+- [V2 Phase 02: Natural Disaster System](HANDOFFS/V2_PHASE_02.md)

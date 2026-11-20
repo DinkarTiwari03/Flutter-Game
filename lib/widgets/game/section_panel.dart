@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/core/utils/number_format.dart';
-import 'package:city_builder_2040/game/buildings/building_definition.dart';
 import 'package:city_builder_2040/game/map/tile_type.dart';
 import 'package:city_builder_2040/models/game_section.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/widgets/game/building_selection_menu.dart';
+import 'package:city_builder_2040/widgets/game/disaster/disaster_panel.dart';
 import 'package:city_builder_2040/widgets/game/game_navigation.dart';
 import 'package:city_builder_2040/widgets/game/missions/missions_main_panel.dart';
+import 'package:city_builder_2040/widgets/game/traffic/traffic_dashboard.dart';
 import 'package:city_builder_2040/widgets/game_card.dart';
 
 /// Title row shared by the phone sheet and the desktop side panel.
@@ -145,9 +146,7 @@ class SectionPanelContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return switch (section) {
       GameSection.build => const BuildingSelectionMenu(),
-      GameSection.roads => const BuildingSelectionMenu(
-        initialCategory: BuildingCategory.infrastructure,
-      ),
+      GameSection.roads => const TrafficDashboardView(),
       GameSection.economy => const _InfoRows(
         note: 'The economy is not simulated yet.',
         rows: [
@@ -158,6 +157,7 @@ class SectionPanelContent extends ConsumerWidget {
       ),
       GameSection.missions => const MissionsMainPanel(),
       GameSection.statistics => const _StatisticsRows(),
+      GameSection.disasters => const DisasterPanelView(),
     };
   }
 }

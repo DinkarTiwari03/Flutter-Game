@@ -5,7 +5,8 @@ enum GameSection {
   roads('Roads', 'Lay roads to connect your districts.'),
   economy('Economy', 'Taxes, income and budget.'),
   missions('Missions', 'Goals and rewards.'),
-  statistics('Statistics', 'City-wide numbers and trends.');
+  statistics('Statistics', 'City-wide numbers and trends.'),
+  disasters('Disasters', 'Monitor risks, alerts and emergency responses.');
 
   const GameSection(this.label, this.summary);
 

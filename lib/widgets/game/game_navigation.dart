@@ -15,6 +15,7 @@ IconData gameSectionIcon(GameSection section) {
     GameSection.economy => Icons.account_balance_wallet_rounded,
     GameSection.missions => Icons.flag_rounded,
     GameSection.statistics => Icons.insights_rounded,
+    GameSection.disasters => Icons.warning_amber_rounded,
   };
 }
 

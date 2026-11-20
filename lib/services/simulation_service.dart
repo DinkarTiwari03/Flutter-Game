@@ -8,8 +8,24 @@ import 'package:city_builder_2040/models/city_resource.dart';
 import 'package:city_builder_2040/models/resource_ledger.dart';
 import 'package:city_builder_2040/models/resource_transaction.dart';
 import 'package:city_builder_2040/models/simulation_clock.dart';
+import 'package:city_builder_2040/models/traffic/traffic_models.dart';
 import 'package:city_builder_2040/repositories/resource_repository.dart';
 import 'package:city_builder_2040/services/economy_service.dart';
+
+/// Physical and economic impact of an ongoing natural disaster.
+class DisasterEffects {
+  const DisasterEffects({
+    this.happinessPenalty = 0,
+    this.pollutionAdd = 0,
+    this.coinsLostThisTick = 0,
+    this.electricityDemandPercent = 0,
+  });
+
+  final int happinessPenalty;
+  final int pollutionAdd;
+  final int coinsLostThisTick;
+  final int electricityDemandPercent;
+}
 
 /// The result of executing one discrete simulation engine tick.
 class SimulationTickResult {
@@ -179,9 +195,36 @@ class SimulationService {
     required List<Building> buildings,
     required City city,
     required List<CityEvent> activeEvents,
+    TrafficMetrics? trafficMetrics,
+    DisasterEffects? disasterEffects,
   }) {
     final now = _clock().toUtc();
     final transactions = <ResourceTransaction>[];
+
+    // Traffic congestion consequences
+    var trafficHappinessPenalty = 0;
+    var trafficPollutionAdd = 0;
+    var trafficEconomicLoss = 0;
+
+    if (trafficMetrics != null) {
+      final cong = trafficMetrics.overallCongestionPercent;
+      if (cong >= 70) {
+        trafficHappinessPenalty = 8;
+        trafficPollutionAdd = 12;
+      } else if (cong >= 40) {
+        trafficHappinessPenalty = 4;
+        trafficPollutionAdd = 6;
+      } else if (cong >= 20) {
+        trafficHappinessPenalty = 2;
+        trafficPollutionAdd = 2;
+      }
+      trafficEconomicLoss = trafficMetrics.economicLossPerHour;
+    }
+
+    // Disaster consequences
+    final disasterHappinessPenalty = disasterEffects?.happinessPenalty ?? 0;
+    final disasterPollutionAdd = disasterEffects?.pollutionAdd ?? 0;
+    final disasterCoinsLoss = disasterEffects?.coinsLostThisTick ?? 0;
 
     // 1. Advance in-game clock (1 tick = 1 in-game hour)
     final nextClock = clock.advance(minutesAdvanced: 60);
@@ -235,7 +278,7 @@ class SimulationService {
     final electricity = _economy.calculateElectricity(buildings);
     final water = _economy.calculateWater(buildings);
     final basePollution = _economy.calculatePollution(buildings);
-    final pollution = math.max(0, basePollution + eventPollutionModifier).clamp(0, 100);
+    final pollution = math.max(0, basePollution + eventPollutionModifier + trafficPollutionAdd + disasterPollutionAdd).clamp(0, 100);
 
     // 4. Base happiness plus event bonuses and service coverage
     final baseHappiness = _economy.calculateHappiness(
@@ -254,7 +297,7 @@ class SimulationService {
       serviceBonus -= 5; // Unemployment penalty
     }
 
-    final happiness = (baseHappiness + eventHappinessBonus + serviceBonus).clamp(0, 100);
+    final happiness = (baseHappiness + eventHappinessBonus + serviceBonus - trafficHappinessPenalty - disasterHappinessPenalty).clamp(0, 100);
 
     // 5. Population and labor migration simulation
     final nextDemographics = simulateDemographics(
@@ -266,11 +309,12 @@ class SimulationService {
       growthMultiplier: growthMultiplier,
     );
 
-    // 6. Financial Economy calculations with event multiplier
+    // 6. Financial Economy calculations with event multiplier, traffic delay losses, and disaster repair costs
     final baseIncome = _economy.calculateIncome(buildings, nextDemographics.totalPopulation);
-    final adjustedIncome = (baseIncome.total * taxMultiplier).round();
+    final grossIncome = (baseIncome.total * taxMultiplier).round();
+    final adjustedIncome = math.max(0, grossIncome - trafficEconomicLoss);
     final expenses = _economy.calculateExpenses(buildings);
-    final netCashflow = adjustedIncome - expenses.total;
+    final netCashflow = adjustedIncome - expenses.total - disasterCoinsLoss;
 
     // Apply instant rewards if any
     final instantReward = newlyTriggeredEvent?.instantCoinReward ?? 0;
@@ -297,6 +341,18 @@ class SimulationService {
           type: TransactionType.maintenanceExpense,
           amount: -expenses.total,
           description: 'Municipal operating upkeep (-¢${expenses.total})',
+          timestamp: now,
+        ),
+      );
+    }
+    if (disasterCoinsLoss > 0) {
+      transactions.add(
+        ResourceTransaction(
+          id: 'tx_disaster_${nextClock.tickCount}',
+          cityId: city.id,
+          type: TransactionType.demolitionRefund,
+          amount: -disasterCoinsLoss,
+          description: 'Disaster response & emergency reconstruction (-¢$disasterCoinsLoss)',
           timestamp: now,
         ),
       );

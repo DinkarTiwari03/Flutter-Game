@@ -425,6 +425,7 @@ class _MapViewportState extends ConsumerState<MapViewport>
     final selectedBuildingId = ref.watch(selectedBuildingIdProvider);
     final clock = ref.watch(simulationClockProvider);
     final urbanService = ref.watch(urbanSimulationProvider);
+    final showTrafficHeatmap = ref.watch(trafficHeatmapVisibleProvider);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -460,6 +461,7 @@ class _MapViewportState extends ConsumerState<MapViewport>
                   urbanService: urbanService,
                   urbanCache: _urbanCache,
                   clock: clock,
+                  showTrafficHeatmap: showTrafficHeatmap,
                   onSpriteLoaded: () {
                     if (mounted) setState(() {});
                   },

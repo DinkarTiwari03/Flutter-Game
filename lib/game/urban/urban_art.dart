@@ -1,11 +1,15 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:city_builder_2040/core/theme/app_colors.dart';
+import 'package:city_builder_2040/game/map/grid_point.dart';
+import 'package:city_builder_2040/game/map/iso_projection.dart';
 import 'package:city_builder_2040/game/urban/compass_direction.dart';
 import 'package:city_builder_2040/game/urban/pedestrian.dart';
+import 'package:city_builder_2040/game/urban/road_graph.dart';
 import 'package:city_builder_2040/game/urban/urban_sprite_cache.dart';
 import 'package:city_builder_2040/game/urban/urban_sprite_registry.dart';
 import 'package:city_builder_2040/game/urban/vehicle.dart';
+import 'package:city_builder_2040/models/traffic/traffic_models.dart';
 
 /// Isometric 2.5D visual rendering routines for vehicles, pedestrians, and traffic lights.
 abstract final class UrbanArt {
@@ -27,7 +31,26 @@ abstract final class UrbanArt {
       _paintVehicleLights(canvas, vehicle);
     }
 
-    // 2. Sprite drawing
+    // 2. Emergency flashing sirens
+    if (vehicle.isEmergency) {
+      final isRed = (vehicle.sirenTimer % 1.0) < 0.5;
+      final sirenColor = isRed ? const Color(0xFFEF4444) : const Color(0xFF3B82F6);
+      canvas.drawCircle(
+        vehicle.worldPos + const Offset(0, -9),
+        3.0,
+        Paint()..color = sirenColor.withAlpha(230),
+      );
+      canvas.drawCircle(
+        vehicle.worldPos + const Offset(0, -9),
+        6.0,
+        Paint()
+          ..color = sirenColor.withAlpha(100)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0,
+      );
+    }
+
+    // 3. Sprite drawing
     if (sprite != null) {
       final w = sprite.width.toDouble();
       final h = sprite.height.toDouble();
@@ -190,5 +213,79 @@ abstract final class UrbanArt {
       2.5,
       Paint()..color = const Color(0xFFFFD1A4).withAlpha(alpha),
     );
+  }
+
+  /// Paints the color-coded traffic congestion heatmap on all active road tiles.
+  static void paintTrafficHeatmap({
+    required Canvas canvas,
+    required RoadGraph graph,
+    required Map<GridPoint, TrafficSegmentStats> segmentStats,
+  }) {
+    for (final road in graph.roadTiles) {
+      final top = IsoProjection.tileTop(road.col, road.row);
+      final path = Path()
+        ..moveTo(top.dx, top.dy)
+        ..lineTo(top.dx + IsoProjection.halfWidth, top.dy + IsoProjection.halfHeight)
+        ..lineTo(top.dx, top.dy + IsoProjection.tileHeight)
+        ..lineTo(top.dx - IsoProjection.halfWidth, top.dy + IsoProjection.halfHeight)
+        ..close();
+
+      final stats = segmentStats[road];
+      final condition = stats?.condition ?? TrafficCondition.freeFlow;
+
+      final fillColor = condition.color.withAlpha(120);
+      final strokeColor = condition.color.withAlpha(225);
+
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = fillColor
+          ..style = PaintingStyle.fill,
+      );
+
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = strokeColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2,
+      );
+
+      // Traffic Signal Indicator on intersection tiles
+      if (stats?.hasSignal == true) {
+        final center = IsoProjection.tileCenter(road.col, road.row);
+        final isEWGreen = stats?.signalState == SignalState.horizontalGreen;
+        final isYellow = stats?.signalState == SignalState.yellowTransition;
+
+        final sigColor = isYellow
+            ? const Color(0xFFFACC15)
+            : (isEWGreen ? const Color(0xFF22C55E) : const Color(0xFFEF4444));
+
+        canvas.drawCircle(
+          center + const Offset(0, -6),
+          3.2,
+          Paint()..color = sigColor,
+        );
+        canvas.drawCircle(
+          center + const Offset(0, -6),
+          5.0,
+          Paint()
+            ..color = sigColor.withAlpha(90)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.0,
+        );
+      }
+
+      // Disaster roadblock / closure indicator
+      if (graph.isBlocked(road)) {
+        final center = IsoProjection.tileCenter(road.col, road.row);
+        final xPaint = Paint()
+          ..color = const Color(0xFFEF4444)
+          ..strokeWidth = 2.2
+          ..style = PaintingStyle.stroke;
+        canvas.drawLine(center + const Offset(-6, -4), center + const Offset(6, 4), xPaint);
+        canvas.drawLine(center + const Offset(6, -4), center + const Offset(-6, 4), xPaint);
+      }
+    }
   }
 }

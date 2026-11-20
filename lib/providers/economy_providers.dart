@@ -5,12 +5,16 @@ import 'package:city_builder_2040/models/city_resource.dart';
 import 'package:city_builder_2040/models/resource_ledger.dart';
 import 'package:city_builder_2040/models/resource_transaction.dart';
 import 'package:city_builder_2040/models/simulation_speed.dart';
+import 'package:city_builder_2040/models/disaster/disaster_models.dart';
 import 'package:city_builder_2040/providers/active_city_provider.dart';
 import 'package:city_builder_2040/providers/autosave_provider.dart';
 import 'package:city_builder_2040/providers/building_providers.dart';
+import 'package:city_builder_2040/providers/disaster_providers.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
 import 'package:city_builder_2040/providers/repository_providers.dart';
 import 'package:city_builder_2040/providers/simulation_providers.dart';
+import 'package:city_builder_2040/providers/urban_providers.dart';
+import 'package:city_builder_2040/services/simulation_service.dart';
 
 /// Manages the [ResourceLedger] for the active city.
 class CityLedgerNotifier extends AsyncNotifier<ResourceLedger?> {
@@ -43,6 +47,42 @@ class CityLedgerNotifier extends AsyncNotifier<ResourceLedger?> {
     final clock = ref.read(simulationClockProvider);
     final demographics = ref.read(cityDemographicsProvider);
     final activeEvents = ref.read(activeCityEventsProvider);
+    final trafficMetrics = ref.read(urbanSimulationProvider).trafficMetrics;
+    final disasterEngine = ref.read(disasterEngineProvider);
+    final urbanSim = ref.read(urbanSimulationProvider);
+
+    // Drive disaster simulation engine
+    final currentPollution = ref.read(cityEconomySnapshotProvider)?.pollution ?? 0;
+    disasterEngine.update(
+      1.0,
+      buildings: buildings,
+      roadTiles: urbanSim.roadGraph.roadTiles,
+      population: currentLedger.population,
+      pollution: currentPollution,
+      happiness: currentLedger.happiness,
+      healthcareRating: demographics.healthcareRating,
+      clock: clock,
+    );
+
+    // Sync disaster-blocked roads to urban simulation & road graph
+    urbanSim.updateDisasterBlockedRoads(disasterEngine.blockedRoads);
+
+    // Compute disaster impact for this tick
+    DisasterEffects? disasterEffects;
+    final activeDisaster = disasterEngine.activeDisaster;
+    if (activeDisaster != null &&
+        (activeDisaster.isOccurring ||
+            activeDisaster.isInResponse ||
+            activeDisaster.isInRecovery)) {
+      final rep = activeDisaster.report;
+      disasterEffects = DisasterEffects(
+        happinessPenalty: ((rep?.happinessLost ?? 8) / 3).round(),
+        pollutionAdd: activeDisaster.type == DisasterType.fire ? 8 : (activeDisaster.type == DisasterType.heatwave ? 6 : 0),
+        coinsLostThisTick: (rep != null && rep.recoveryDurationTicks > 0)
+            ? (rep.coinsLost / rep.recoveryDurationTicks).round()
+            : 0,
+      );
+    }
 
     final result = simulation.simulateTick(
       ledger: currentLedger,
@@ -51,6 +91,8 @@ class CityLedgerNotifier extends AsyncNotifier<ResourceLedger?> {
       buildings: buildings,
       city: city,
       activeEvents: activeEvents,
+      trafficMetrics: trafficMetrics,
+      disasterEffects: disasterEffects,
     );
 
     // Save updated ledger

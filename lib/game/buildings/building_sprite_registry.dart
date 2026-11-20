@@ -69,6 +69,14 @@ abstract final class BuildingSpriteRegistry {
 
     // ── Infrastructure ───────────────────────────────────────────────────────
     'road:1': 'assets/buildings/infrastructure/road.png',
+    'road:2': 'assets/buildings/infrastructure/road.png',
+    'road:3': 'assets/buildings/infrastructure/road.png',
+    'road:4': 'assets/buildings/infrastructure/road.png',
+    'bus_stop:1': 'assets/buildings/infrastructure/road.png',
+    'bus_stop:2': 'assets/buildings/infrastructure/road.png',
+    'bus_station:1': 'assets/buildings/public_services/school_lv1.png',
+    'bus_station:2': 'assets/buildings/public_services/school_lv2.png',
+    'bus_station:3': 'assets/buildings/public_services/school_lv3.png',
 
     'power_plant:1': 'assets/buildings/infrastructure/power_plant_lv1.png',
     'power_plant:2': 'assets/buildings/infrastructure/power_plant_lv2.png',

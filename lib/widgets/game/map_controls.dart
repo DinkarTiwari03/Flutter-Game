@@ -4,6 +4,7 @@ import 'package:city_builder_2040/core/theme/app_colors.dart';
 import 'package:city_builder_2040/core/theme/app_spacing.dart';
 import 'package:city_builder_2040/game/engine/map_camera_controller.dart';
 import 'package:city_builder_2040/providers/game_providers.dart';
+import 'package:city_builder_2040/providers/urban_providers.dart';
 
 /// Floating zoom / recenter / grid buttons over the map.
 ///
@@ -17,6 +18,7 @@ class MapControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showGrid = ref.watch(showGridProvider);
+    final showTrafficHeatmap = ref.watch(trafficHeatmapVisibleProvider);
     final isLandscape =
         MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
     final btnSize = isLandscape ? 40.0 : 44.0;
@@ -42,6 +44,16 @@ class MapControls extends ConsumerWidget {
           size: btnSize,
           iconSize: iconSize,
           onPressed: ref.read(showGridProvider.notifier).toggle,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        _ControlButton(
+          buttonKey: const ValueKey('control-traffic'),
+          icon: Icons.traffic_rounded,
+          tooltip: 'Traffic heatmap (T)',
+          selected: showTrafficHeatmap,
+          size: btnSize,
+          iconSize: iconSize,
+          onPressed: ref.read(trafficHeatmapVisibleProvider.notifier).toggle,
         ),
       ],
     );

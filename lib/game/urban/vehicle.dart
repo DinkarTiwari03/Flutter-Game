@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:city_builder_2040/game/map/grid_point.dart';
 import 'package:city_builder_2040/game/map/iso_projection.dart';
 import 'package:city_builder_2040/game/urban/compass_direction.dart';
+import 'package:city_builder_2040/models/traffic/traffic_models.dart';
 
 /// Types of vehicles simulated in City Builder 2040.
 enum VehicleType {
-  // Personal transport
+  // Personal transport (Cars, bikes)
   sedan('Sedan', VehicleCategory.personal, 48.0, 5.0),
   sedanSports('Sports Car', VehicleCategory.personal, 56.0, 5.0),
   suv('SUV', VehicleCategory.personal, 46.0, 5.5),
@@ -13,7 +14,7 @@ enum VehicleType {
   bicycle('Bicycle', VehicleCategory.personal, 26.0, 6.5),
 
   // Public transit
-  bus('City Bus', VehicleCategory.publicTransport, 36.0, 4.0),
+  bus('City Bus', VehicleCategory.publicTransport, 38.0, 4.0),
   taxi('Taxi', VehicleCategory.publicTransport, 50.0, 5.0),
 
   // Commercial & Logistics
@@ -25,9 +26,9 @@ enum VehicleType {
   garbageTruck('City Sanitation', VehicleCategory.commercial, 32.0, 4.5),
 
   // Emergency & Municipal
-  police('Police Cruiser', VehicleCategory.emergency, 62.0, 5.0),
-  ambulance('Ambulance', VehicleCategory.emergency, 60.0, 5.0),
-  firetruck('Fire Engine', VehicleCategory.emergency, 52.0, 4.5),
+  police('Police Cruiser', VehicleCategory.emergency, 64.0, 5.0),
+  ambulance('Ambulance', VehicleCategory.emergency, 62.0, 5.0),
+  firetruck('Fire Engine', VehicleCategory.emergency, 54.0, 4.5),
 
   // Construction
   tractor('Bulldozer', VehicleCategory.construction, 28.0, 4.0),
@@ -84,6 +85,8 @@ enum VehicleCategory {
 
   bool get isEmergency => this == emergency;
   bool get isConstruction => this == construction;
+  bool get isCommercial => this == commercial;
+  bool get isPublicTransit => this == publicTransport;
 }
 
 /// Simulated moving vehicle on the city road network.
@@ -97,18 +100,24 @@ class Vehicle {
     double? initialProgress,
     this.originBuildingId,
     this.destinationBuildingId,
+    this.destinationTile,
+    List<GridPoint>? initialRoute,
   })  : progress = initialProgress ?? 0.0,
         baseSpeed = type.defaultSpeed,
         currentSpeed = type.defaultSpeed,
-        worldPos = _computeWorldPos(currentTile, nextTile, heading, type.laneOffset, initialProgress ?? 0.0);
+        worldPos = _computeWorldPos(currentTile, nextTile, heading, type.laneOffset, initialProgress ?? 0.0) {
+    if (initialRoute != null && initialRoute.isNotEmpty) {
+      path = List.from(initialRoute);
+    }
+  }
 
   final String id;
   final VehicleType type;
 
-  /// Current tile origin of the movement segment.
+  /// Current tile origin of movement segment.
   GridPoint currentTile;
 
-  /// Target tile destination of the movement segment.
+  /// Target tile destination of movement segment.
   GridPoint nextTile;
 
   /// Current compass heading.
@@ -126,11 +135,17 @@ class Vehicle {
   /// Current effective speed (decreases when braking, congested, or waiting).
   double currentSpeed;
 
-  /// Pause timer when waiting at an intersection or yielding to vehicle ahead.
+  /// Target speed calculated from local congestion and road tier limit.
+  double targetSpeed = 48.0;
+
+  /// Pause timer when waiting at an intersection, bus stop, or stopped ahead.
   double waitTimer = 0.0;
 
   /// Whether vehicle is currently waiting.
   bool get isWaiting => waitTimer > 0;
+
+  /// Whether vehicle is stopped completely due to traffic stoppage ahead.
+  bool isBlocked = false;
 
   /// Associated source building (e.g. hospital, factory, residential).
   final String? originBuildingId;
@@ -138,8 +153,23 @@ class Vehicle {
   /// Associated target destination building.
   final String? destinationBuildingId;
 
+  /// Target ultimate destination tile.
+  GridPoint? destinationTile;
+
   /// Path of future road tiles to traverse.
   List<GridPoint> path = [];
+
+  /// Current waypoint index along [path].
+  int pathIndex = 0;
+
+  /// Whether vehicle is making a return journey to its origin.
+  bool isReturning = false;
+
+  /// Passenger load for public transit buses.
+  int passengerCount = 0;
+
+  /// Emergency vehicle siren pulse cycle.
+  double sirenTimer = 0.0;
 
   /// Total active ticks.
   int ageTicks = 0;
@@ -147,10 +177,24 @@ class Vehicle {
   /// Flagged when vehicle reaches final destination or despawn limit.
   bool isDespawned = false;
 
+  /// Current local traffic condition this vehicle is experiencing.
+  TrafficCondition localCondition = TrafficCondition.freeFlow;
+
+  bool get isEmergency => type.category.isEmergency;
+  bool get isBus => type == VehicleType.bus;
+  bool get hasActiveRoute => path.isNotEmpty && pathIndex < path.length;
+
   /// Depth sorting key in isometric projection: `(col + row)`.
   double get depth => currentTile.col + currentTile.row + progress;
 
-  /// Calculates the visual world position along the road with right-hand lane offset.
+  /// Assigns a planned journey route.
+  void assignRoute(List<GridPoint> newRoute, {GridPoint? dest}) {
+    path = List.from(newRoute);
+    pathIndex = 0;
+    if (dest != null) destinationTile = dest;
+  }
+
+  /// Calculates visual world position along the road with right-hand lane offset.
   static Offset _computeWorldPos(
     GridPoint from,
     GridPoint to,
@@ -174,9 +218,18 @@ class Vehicle {
   void updateMovement(double dt) {
     if (isDespawned) return;
 
+    if (isEmergency) {
+      sirenTimer += dt * 4.0;
+    }
+
     if (waitTimer > 0) {
       waitTimer -= dt;
       if (waitTimer < 0) waitTimer = 0;
+      return;
+    }
+
+    if (isBlocked) {
+      currentSpeed = 0.0;
       return;
     }
 
@@ -194,7 +247,7 @@ class Vehicle {
     worldPos = _computeWorldPos(currentTile, nextTile, heading, type.laneOffset, progress);
   }
 
-  /// Transitions movement to the [newNext] road tile upon reaching [nextTile].
+  /// Transitions movement to [newNext] road tile upon reaching [nextTile].
   void advanceTo(GridPoint newNext) {
     currentTile = nextTile;
     nextTile = newNext;
